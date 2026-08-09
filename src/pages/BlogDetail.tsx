@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Calendar, Clock, Loader2 } from "lucide-react";
-import { blogsData, getBlogBySlug, getInitials, type BlogPost } from "../data/blogsData";
-import { servicesData } from "../data/servicesData";
+import { ArrowLeft, ArrowRight, Calendar, Clock } from "lucide-react";
+import { getInitials } from "../data/blogsData";
+import { getStoredServices } from "../services/serviceStore";
+import { getBlogBySlug, getStoredPosts, type BlogPost } from "../services/blogStore";
+import type { ServiceData } from "../data/servicesData";
 import { getServiceIcon } from "../utils/getServiceIcon";
 
-function getService(serviceSlug: string) {
-  return servicesData.find((s) => s.slug === serviceSlug);
+function getService(serviceSlug: string, services: ServiceData[]) {
+  return services.find((service) => service.slug === serviceSlug);
 }
 
 function CoverArt({ Icon }: { Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }> }) {
@@ -28,56 +30,21 @@ function CoverArt({ Icon }: { Icon: React.ComponentType<{ size?: number; strokeW
 
 export default function BlogDetail() {
   const { slug } = useParams();
-  const [post, setPost] = useState<BlogPost | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState<BlogPost[]>(() => getStoredPosts());
+  const [services, setServices] = useState<ServiceData[]>(() => getStoredServices());
 
-  // Fetch post dynamically (Admin compatibility) with fallback to local static data
   useEffect(() => {
-    if (!slug) {
-      setLoading(false);
-      return;
-    }
+    setPosts(getStoredPosts());
+    setServices(getStoredServices());
 
-    let isSubscribed = true;
-    setLoading(true);
-
-    fetch(`/api/blogs/${slug}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Blog not found on server");
-        return res.json();
-      })
-      .then((data) => {
-        if (isSubscribed) {
-          setPost(data);
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        if (isSubscribed) {
-          // Fallback to static blogsData
-          const localPost = getBlogBySlug(slug);
-          setPost(localPost || null);
-          setLoading(false);
-        }
+    if (slug) {
+      fetch(`/api/blog-views/${slug}`, { method: "POST" }).catch(() => {
+        /* fail silently */
       });
-
-    // Record a real view for this post
-    fetch(`/api/blog-views/${slug}`, { method: "POST" }).catch(() => {
-      /* fail silently */
-    });
-
-    return () => {
-      isSubscribed = false;
-    };
+    }
   }, [slug]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center pt-32 pb-20">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      </div>
-    );
-  }
+  const post = slug ? getBlogBySlug(posts, slug) : undefined;
 
   if (!post) {
     return (
@@ -88,15 +55,9 @@ export default function BlogDetail() {
     );
   }
 
-  const service = getService(post.serviceSlug);
-  const morePosts = blogsData.filter((p) => p.slug !== post.slug).slice(0, 3);
-
-  // Normalize content: supports structured block array or fallback string content from admin inputs
-  const contentBlocks = Array.isArray(post.content)
-    ? post.content
-    : typeof post.content === "string"
-    ? [{ type: "paragraph", text: post.content }]
-    : [];
+  const service = getService(post.serviceSlug, services);
+  const morePosts = posts.filter((item) => item.id !== post.id).slice(0, 3);
+  const contentBlocks = Array.isArray(post.content) ? post.content : [];
 
   return (
     <div className="min-h-screen bg-background text-body font-body">
@@ -159,6 +120,23 @@ export default function BlogDetail() {
                   </h2>
                 );
               }
+
+              if (block.type === "list") {
+                return (
+                  <ul key={i} className="list-disc space-y-2 pl-6 font-body text-lg text-body leading-relaxed">
+                    {(block.items ?? []).map((item, itemIndex) => <li key={itemIndex}>{item}</li>)}
+                  </ul>
+                );
+              }
+
+              if (block.type === "quote") {
+                return (
+                  <blockquote key={i} className="border-l-4 border-primary/40 pl-5 font-body text-lg italic leading-relaxed text-body">
+                    {block.text}
+                  </blockquote>
+                );
+              }
+
               const isLead = i === 0;
               return (
                 <p
@@ -184,25 +162,25 @@ export default function BlogDetail() {
             More From the Blog
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {morePosts.map((p) => {
-              const pService = getService(p.serviceSlug);
+            {morePosts.map((morePost) => {
+              const moreService = getService(morePost.serviceSlug, services);
               return (
                 <Link
-                  key={p.slug}
-                  to={`/blog/${p.slug}`}
+                  key={morePost.id}
+                  to={`/blog/${morePost.slug}`}
                   className="group flex flex-col bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
                 >
                   <div className="relative h-36">
-                    <CoverArt Icon={pService ? getServiceIcon(pService.icon) : (() => null)} />
-                    {pService && (
+                    <CoverArt Icon={moreService ? getServiceIcon(moreService.icon) : (() => null)} />
+                    {moreService && (
                       <span className="absolute top-3 left-3 inline-block text-xs font-semibold text-secondary bg-white px-2.5 py-1 rounded-full shadow-sm">
-                        {pService.name}
+                        {moreService.name}
                       </span>
                     )}
                   </div>
                   <div className="p-5">
                     <h3 className="text-base font-heading font-semibold text-secondary leading-snug group-hover:text-primary transition-colors">
-                      {p.title}
+                      {morePost.title}
                     </h3>
                   </div>
                 </Link>

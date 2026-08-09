@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Search, Mail, Loader2, CheckCircle, AlertCircle } from "lucide-react";
-import { blogsData, getBlogBySlug, type BlogPost } from "../data/blogsData";
-import { servicesData, type ServiceData } from "../data/servicesData";
+import { getInitials } from "../data/blogsData";
+import { getStoredServices } from "../services/serviceStore";
+import { getStoredPosts, type BlogPost } from "../services/blogStore";
+import type { ServiceData } from "../data/servicesData";
 import { getServiceIcon } from "../utils/getServiceIcon";
 
-function getService(serviceSlug: string): ServiceData | undefined {
-  return servicesData.find((s) => s.slug === serviceSlug);
+function getService(serviceSlug: string, services: ServiceData[]): ServiceData | undefined {
+  return services.find((service) => service.slug === serviceSlug);
 }
 
 function CoverArt({ Icon }: { Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }> }) {
@@ -37,6 +39,13 @@ export default function BlogIndex() {
   const [popular, setPopular] = useState<PopularEntry[]>([]);
   const [subscribeEmail, setSubscribeEmail] = useState("");
   const [subscribeStatus, setSubscribeStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [posts, setPosts] = useState<BlogPost[]>(() => getStoredPosts());
+  const [services, setServices] = useState<ServiceData[]>(() => getStoredServices());
+
+  useEffect(() => {
+    setPosts(getStoredPosts());
+    setServices(getStoredServices());
+  }, []);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,24 +70,24 @@ export default function BlogIndex() {
 
   const categoryCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    blogsData.forEach((post) => {
+    posts.forEach((post) => {
       counts.set(post.serviceSlug, (counts.get(post.serviceSlug) ?? 0) + 1);
     });
-    return servicesData
+    return services
       .map((service) => ({ service, count: counts.get(service.slug) ?? 0 }))
       .filter((entry) => entry.count > 0);
-  }, []);
+  }, [posts, services]);
 
   const filteredPosts = useMemo(() => {
-    return blogsData.filter((post) => {
+    return posts.filter((post) => {
       const matchesService = !activeService || post.serviceSlug === activeService;
       if (!matchesService) return false;
       if (!query.trim()) return true;
-      const service = getService(post.serviceSlug);
+      const service = getService(post.serviceSlug, services);
       const haystack = `${post.title} ${post.excerpt} ${service?.name ?? ""}`.toLowerCase();
       return haystack.includes(query.trim().toLowerCase());
     });
-  }, [activeService, query]);
+  }, [activeService, posts, query, services]);
 
   useEffect(() => {
     fetch("/api/blog-views/popular?limit=3")
@@ -88,7 +97,7 @@ export default function BlogIndex() {
   }, []);
 
   const popularPosts: BlogPost[] = popular
-    .map((entry) => getBlogBySlug(entry.slug))
+    .map((entry) => posts.find((post) => post.slug === entry.slug || post.legacySlugs?.includes(entry.slug)))
     .filter((p): p is BlogPost => Boolean(p));
 
   return (
@@ -108,7 +117,7 @@ export default function BlogIndex() {
               >
                 All Posts
               </button>
-              {servicesData.map((service) => (
+              {services.map((service) => (
                 <button
                   key={service.slug}
                   onClick={() => setActiveService(service.slug)}
@@ -149,7 +158,7 @@ export default function BlogIndex() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {filteredPosts.map((post) => {
-                  const service = getService(post.serviceSlug);
+                  const service = getService(post.serviceSlug, services);
                   return (
                     <Link
                       key={post.slug}
@@ -217,7 +226,7 @@ export default function BlogIndex() {
                 <h3 className="font-heading font-bold text-secondary text-base mb-5">Popular Posts</h3>
                 <ul className="space-y-4">
                   {popularPosts.map((post, i) => {
-                    const service = getService(post.serviceSlug);
+                    const service = getService(post.serviceSlug, services);
                     return (
                       <li key={post.slug}>
                         <Link to={`/blog/${post.slug}`} className="flex items-center gap-3 group">

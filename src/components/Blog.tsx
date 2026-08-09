@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
-import { blogsData, getInitials } from "../data/blogsData";
-import { servicesData } from "../data/servicesData";
+import { getInitials } from "../data/blogsData";
+import { getStoredServices } from "../services/serviceStore";
+import { getStoredPosts, type BlogPost } from "../services/blogStore";
 import { getServiceIcon } from "../utils/getServiceIcon";
+import type { ServiceData } from "../data/servicesData";
 
-function getService(serviceSlug: string) {
-  return servicesData.find((s) => s.slug === serviceSlug);
+function getService(serviceSlug: string, services: ServiceData[]) {
+  return services.find((service) => service.slug === serviceSlug);
 }
 
 function CoverArt({ Icon }: { Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }> }) {
@@ -26,9 +29,23 @@ function CoverArt({ Icon }: { Icon: React.ComponentType<{ size?: number; strokeW
 }
 
 export default function Blog() {
-  const [featured, ...rest] = blogsData;
+  const [posts] = useState<BlogPost[]>(() => getStoredPosts());
+  const [services] = useState<ServiceData[]>(() => getStoredServices());
+  const [featured, ...rest] = posts;
   const secondary = rest.slice(0, 2);
-  const featuredService = getService(featured.serviceSlug);
+
+  if (!featured) {
+    return (
+      <section id="blog" className="py-24 bg-surface">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-heading font-bold text-secondary mb-4">From the Blog</h2>
+          <p className="text-gray-600">New insights are being prepared. Check back soon.</p>
+        </div>
+      </section>
+    );
+  }
+
+  const featuredService = getService(featured.serviceSlug, services);
 
   return (
     <section id="blog" className="py-24 bg-surface">
@@ -86,10 +103,10 @@ export default function Blog() {
         {/* Secondary posts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {secondary.map((post) => {
-            const service = getService(post.serviceSlug);
+            const service = getService(post.serviceSlug, services);
             return (
               <Link
-                key={post.slug}
+                key={post.id}
                 to={`/blog/${post.slug}`}
                 className="group flex flex-col bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
               >
