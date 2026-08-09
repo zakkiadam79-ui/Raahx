@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { getStoredTeamMembers } from "../services/teamStore";
+import {
+  fetchTeamFromApi,
+  getStoredTeamMembers,
+  isTeamApiConfigured,
+  type TeamRecord,
+} from "../services/teamStore";
 import type { TeamMember } from "../data/teamData";
 
 function TeamMemberImage({ member }: { member: TeamMember }) {
@@ -33,7 +38,35 @@ function TeamMemberImage({ member }: { member: TeamMember }) {
 }
 
 export default function Team() {
-  const [teamMembers] = useState<TeamMember[]>(() => getStoredTeamMembers());
+  const [teamMembers, setTeamMembers] = useState<TeamRecord[]>(() => getStoredTeamMembers());
+
+  useEffect(() => {
+    let isMounted = true;
+    const fallbackMembers = getStoredTeamMembers();
+    setTeamMembers(fallbackMembers);
+
+    if (!isTeamApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    fetchTeamFromApi()
+      .then((remoteMembers) => {
+        // Keep the current data visible until the first successful migration
+        // has populated the API, rather than flashing an empty Team section.
+        if (isMounted && (remoteMembers.length > 0 || fallbackMembers.length === 0)) {
+          setTeamMembers(remoteMembers);
+        }
+      })
+      .catch((error) => {
+        console.warn("Team API unavailable; using the local Team fallback.", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <section id="team" className="py-24 bg-gray-50/50">

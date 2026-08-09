@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Check, Edit2, Plus, Trash2, Upload, X } from "lucide-react";
-import { getStoredTeamMembers, saveStoredTeamMembers } from "../../services/teamStore";
-import type { TeamMember } from "../../data/teamData";
+import {
+  createTeamMemberViaApi,
+  deleteTeamMemberViaApi,
+  fetchTeamFromApi,
+  getStoredTeamMembers,
+  isTeamApiConfigured,
+  saveStoredTeamMembers,
+  TeamApiError,
+  teamApiErrorMessage,
+  type TeamRecord,
+  updateTeamMemberViaApi,
+} from "../../services/teamStore";
 
 const fieldClassName =
   "w-full rounded-xl border border-white/20 bg-[#071B17] px-4 py-3 text-sm text-white placeholder:text-gray-400 shadow-inner outline-none transition focus:border-[#2DD4BF] focus:ring-2 focus:ring-[#2DD4BF]/30 disabled:cursor-not-allowed disabled:opacity-60";
@@ -28,8 +38,11 @@ function FormSection({ title, description, children }: FormSectionProps) {
 }
 
 export default function TeamAdmin() {
-  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [members, setMembers] = useState<TeamRecord[]>([]);
   const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [apiError, setApiError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
@@ -38,12 +51,27 @@ export default function TeamAdmin() {
   const [imagePreviewError, setImagePreviewError] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     setMembers(getStoredTeamMembers());
-  }, []);
 
-  const saveToStorage = (updated: TeamMember[]) => {
-    setMembers(saveStoredTeamMembers(updated));
-  };
+    if (!isTeamApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    fetchTeamFromApi()
+      .then((remoteMembers) => {
+        if (isMounted) setMembers(remoteMembers);
+      })
+      .catch((error) => {
+        if (isMounted) setApiError(teamApiErrorMessage(error));
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,32 +87,68 @@ export default function TeamAdmin() {
     reader.readAsDataURL(file);
   };
 
-  const handleAddOrUpdate = (e: React.FormEvent) => {
+  const handleAddOrUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !role.trim()) return;
 
-    if (isEditing) {
-      const updated = members.map((member) =>
-        member.id === isEditing
-          ? { ...member, name: name.trim(), role: role.trim(), image: image.trim(), linkedin: linkedin.trim() || undefined }
-          : member,
-      );
-      saveToStorage(updated);
-    } else {
-      const newMember: TeamMember = {
-        id: Date.now().toString(),
-        name: name.trim(),
-        role: role.trim(),
-        image: image.trim(),
-        linkedin: linkedin.trim() || undefined,
-      };
-      saveToStorage([...members, newMember]);
+    const existing = isEditing
+      ? members.find((member) => member.id === isEditing)
+      : undefined;
+    const imageValue = image.trim();
+
+    if (isTeamApiConfigured() && imageValue.startsWith("data:")) {
+      setApiError("Use an image URL or relative asset path when PHP API mode is enabled. Browser file data is kept only by the local fallback.");
+      return;
     }
 
-    resetForm();
+    const memberPayload: TeamRecord = {
+      ...(existing ?? {}),
+      id: existing?.id,
+      name: name.trim(),
+      role: role.trim(),
+      image: imageValue,
+      linkedin: linkedin.trim() || undefined,
+      displayOrder: existing?.displayOrder ?? members.length,
+    };
+
+    setApiError("");
+    setSuccessMessage("");
+    setIsSaving(true);
+
+    try {
+      if (isTeamApiConfigured()) {
+        if (existing) {
+          if (!existing.id) {
+            throw new TeamApiError(400, "MISSING_TEAM_ID", "This member has no API ID. Reload the Team list before editing it.");
+          }
+          const updatedMember = await updateTeamMemberViaApi(existing.id, memberPayload, existing.displayOrder);
+          setMembers((current) => current.map((member) => member.id === existing.id ? updatedMember : member));
+          setSuccessMessage("Team member updated in the PHP API and MySQL.");
+        } else {
+          const createdMember = await createTeamMemberViaApi(memberPayload, members.length);
+          setMembers((current) => [...current, createdMember]);
+          setSuccessMessage("Team member created in the PHP API and MySQL.");
+        }
+      } else {
+        const localRecord: TeamRecord = {
+          ...memberPayload,
+          id: existing?.id ?? Date.now().toString(),
+        };
+        const updated = existing
+          ? members.map((member) => member.id === existing.id ? localRecord : member)
+          : [...members, localRecord];
+        setMembers(saveStoredTeamMembers(updated));
+        setSuccessMessage("Team member saved to the local fallback. Configure VITE_API_BASE_URL to use MySQL.");
+      }
+      resetForm();
+    } catch (error) {
+      setApiError(teamApiErrorMessage(error));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleEdit = (member: TeamMember) => {
+  const handleEdit = (member: TeamRecord) => {
     setIsEditing(member.id);
     setName(member.name);
     setRole(member.role);
@@ -93,12 +157,30 @@ export default function TeamAdmin() {
     setImagePreviewError(false);
   };
 
-  const handleDelete = (member: TeamMember) => {
+  const handleDelete = async (member: TeamRecord) => {
     if (!confirm(`Delete "${member.name}" from the public Team section?`)) return;
-    saveToStorage(members.filter((item) => item.id !== member.id));
 
-    if (isEditing === member.id) {
-      resetForm();
+    setApiError("");
+    setSuccessMessage("");
+    setIsSaving(true);
+    try {
+      if (isTeamApiConfigured()) {
+        if (!member.id) {
+          throw new TeamApiError(400, "MISSING_TEAM_ID", "This member has no API ID. Reload the Team list before deleting it.");
+        }
+        await deleteTeamMemberViaApi(member.id);
+        setMembers((current) => current.filter((item) => item.id !== member.id));
+        setSuccessMessage("Team member deleted from the PHP API and MySQL.");
+      } else {
+        setMembers(saveStoredTeamMembers(members.filter((item) => item.id !== member.id)));
+        setSuccessMessage("Team member deleted from the local fallback. Configure VITE_API_BASE_URL to use MySQL.");
+      }
+
+      if (isEditing === member.id) resetForm();
+    } catch (error) {
+      setApiError(teamApiErrorMessage(error));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -133,6 +215,17 @@ export default function TeamAdmin() {
             {isEditing ? "Editing existing member" : "New member"}
           </span>
         </div>
+
+        {apiError && (
+          <p role="alert" className="rounded-xl border border-red-300/40 bg-red-950/30 px-4 py-3 text-sm font-medium text-red-200">
+            {apiError}
+          </p>
+        )}
+        {successMessage && (
+          <p role="status" className="rounded-xl border border-emerald-300/30 bg-emerald-950/30 px-4 py-3 text-sm font-medium text-emerald-200">
+            {successMessage}
+          </p>
+        )}
 
         <FormSection
           title="Team Member Basic Information"
@@ -245,10 +338,11 @@ export default function TeamAdmin() {
         <div className="flex flex-wrap gap-3 border-t border-white/15 pt-5">
           <button
             type="submit"
-            className="flex items-center gap-2 rounded-xl bg-[#14B8A6] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#14B8A6]/10 transition-all hover:bg-[#0d9488] focus:outline-none focus:ring-2 focus:ring-[#7FF5DE] focus:ring-offset-2 focus:ring-offset-[#0B241F]"
+            disabled={isSaving}
+            className="flex items-center gap-2 rounded-xl bg-[#14B8A6] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#14B8A6]/10 transition-all hover:bg-[#0d9488] focus:outline-none focus:ring-2 focus:ring-[#7FF5DE] focus:ring-offset-2 focus:ring-offset-[#0B241F] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isEditing ? <Check size={16} /> : <Plus size={16} />}
-            {isEditing ? "Update Member" : "Add Member"}
+            {isSaving ? "Saving..." : isEditing ? "Update Member" : "Add Member"}
           </button>
 
           {isEditing && (
