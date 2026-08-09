@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Search, Mail, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { blogsData, getBlogBySlug, type BlogPost } from "../data/blogsData";
 import { servicesData, type ServiceData } from "../data/servicesData";
+import { getServiceIcon } from "../utils/getServiceIcon";
 
 function getService(serviceSlug: string): ServiceData | undefined {
   return servicesData.find((s) => s.slug === serviceSlug);
@@ -156,7 +157,7 @@ export default function BlogIndex() {
                       className="group flex flex-col bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
                     >
                       <div className="relative h-44">
-                        <CoverArt Icon={service?.icon ?? (() => null)} />
+                        <CoverArt Icon={service ? getServiceIcon(service.icon) : (() => null)} />
                         {service && (
                           <span className="absolute top-4 left-4 inline-block text-xs font-semibold text-secondary bg-white px-3 py-1 rounded-full shadow-sm">
                             {service.name}
@@ -190,20 +191,23 @@ export default function BlogIndex() {
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h3 className="font-heading font-bold text-secondary text-base mb-5">Categories</h3>
               <ul className="space-y-3 max-h-72 overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
-                {categoryCounts.map(({ service, count }) => (
-                  <li key={service.slug}>
-                    <button
-                      onClick={() => setActiveService(service.slug)}
-                      className="w-full flex items-start justify-between gap-3 text-sm text-gray-600 hover:text-primary transition-colors text-left"
-                    >
-                      <span className="flex items-start gap-2 min-w-0">
-                        <service.icon size={15} className="text-primary shrink-0 mt-0.5" />
-                        <span className="min-w-0">{service.name}</span>
-                      </span>
-                      <span className="text-gray-400 shrink-0">{count}</span>
-                    </button>
-                  </li>
-                ))}
+                {categoryCounts.map(({ service, count }) => {
+                  const Icon = getServiceIcon(service.icon);
+                  return (
+                    <li key={service.slug}>
+                      <button
+                        onClick={() => setActiveService(service.slug)}
+                        className="w-full flex items-start justify-between gap-3 text-sm text-gray-600 hover:text-primary transition-colors text-left"
+                      >
+                        <span className="flex items-start gap-2 min-w-0">
+                          <Icon size={15} className="text-primary shrink-0 mt-0.5" />
+                          <span className="min-w-0">{service.name}</span>
+                        </span>
+                        <span className="text-gray-400 shrink-0">{count}</span>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
 
@@ -221,7 +225,7 @@ export default function BlogIndex() {
                             {String(i + 1).padStart(2, "0")}
                           </span>
                           <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
-                            <CoverArt Icon={service?.icon ?? (() => null)} />
+                            <CoverArt Icon={service ? getServiceIcon(service.icon) : (() => null)} />
                           </div>
                           <span className="text-sm font-medium text-secondary leading-snug group-hover:text-primary transition-colors">
                             {post.title}

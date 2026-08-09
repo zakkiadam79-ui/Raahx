@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Calendar, Clock, Loader2 } from "lucide-react";
 import { blogsData, getBlogBySlug, getInitials, type BlogPost } from "../data/blogsData";
 import { servicesData } from "../data/servicesData";
+import { getServiceIcon } from "../utils/getServiceIcon";
 
 function getService(serviceSlug: string) {
   return servicesData.find((s) => s.slug === serviceSlug);
@@ -141,7 +142,7 @@ export default function BlogDetail() {
       <section className="pb-4">
         <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <div className="h-64 md:h-80 rounded-3xl overflow-hidden shadow-lg">
-            <CoverArt Icon={service?.icon ?? (() => null)} />
+            <CoverArt Icon={service ? getServiceIcon(service.icon) : (() => null)} />
           </div>
         </div>
       </section>
@@ -192,7 +193,7 @@ export default function BlogDetail() {
                   className="group flex flex-col bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
                 >
                   <div className="relative h-36">
-                    <CoverArt Icon={pService?.icon ?? (() => null)} />
+                    <CoverArt Icon={pService ? getServiceIcon(pService.icon) : (() => null)} />
                     {pService && (
                       <span className="absolute top-3 left-3 inline-block text-xs font-semibold text-secondary bg-white px-2.5 py-1 rounded-full shadow-sm">
                         {pService.name}

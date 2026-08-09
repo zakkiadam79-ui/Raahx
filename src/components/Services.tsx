@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { servicesData as staticServices, ServiceData } from "../data/servicesData";
+import { getStoredServices } from "../services/serviceStore";
 import { getServiceIcon } from "../utils/getServiceIcon";
 
 const cardPattern = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
@@ -27,10 +28,7 @@ export default function Services() {
   const [services, setServices] = useState<ServiceData[]>(staticServices);
 
   useEffect(() => {
-    const saved = localStorage.getItem("raahx_services_data");
-    if (saved) {
-      setServices(JSON.parse(saved));
-    }
+    setServices(getStoredServices());
   }, []);
 
   return (

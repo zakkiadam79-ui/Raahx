@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Sparkles, CheckCircle2, ArrowRight } from "lucide-react";
 import { servicesData as staticServices, ServiceData } from "../data/servicesData";
+import { getStoredServices } from "../services/serviceStore";
 import { getServiceIcon } from "../utils/getServiceIcon";
 
 export default function ServiceDetail() {
@@ -9,10 +10,7 @@ export default function ServiceDetail() {
   const [services, setServices] = useState<ServiceData[]>(staticServices);
 
   useEffect(() => {
-    const saved = localStorage.getItem("raahx_services_data");
-    if (saved) {
-      setServices(JSON.parse(saved));
-    }
+    setServices(getStoredServices());
   }, []);
 
   const service = services.find((s) => s.slug === slug);

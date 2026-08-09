@@ -1,21 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Edit2, Check, X } from "lucide-react";
-import { servicesData as defaultServices, ServiceData } from "../../data/servicesData";
-
-const STORAGE_KEY = "raahx_services_data";
-
-const ICON_OPTIONS = [
-  "Megaphone",
-  "Share2",
-  "Search",
-  "MonitorSmartphone",
-  "Palette",
-  "Target",
-  "Cpu",
-  "PenTool",
-  "Briefcase",
-  "Code2",
-];
+import { type ServiceData } from "../../data/servicesData";
+import { getStoredServices, saveStoredServices } from "../../services/serviceStore";
+import {
+  DEFAULT_SERVICE_ICON,
+  getServiceIconName,
+  SERVICE_ICON_OPTIONS,
+  type ServiceIconName,
+} from "../../utils/getServiceIcon";
 
 export default function ServicesAdmin() {
   const [services, setServices] = useState<ServiceData[]>([]);
@@ -24,7 +16,7 @@ export default function ServicesAdmin() {
   // Core Service Fields
   const [slug, setSlug] = useState("");
   const [name, setName] = useState("");
-  const [iconName, setIconName] = useState("Megaphone");
+  const [iconName, setIconName] = useState<ServiceIconName>(DEFAULT_SERVICE_ICON);
   const [heroTitle, setHeroTitle] = useState("");
   const [heroSubtitle, setHeroSubtitle] = useState("");
 
@@ -47,17 +39,11 @@ export default function ServicesAdmin() {
   const [author, setAuthor] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      setServices(JSON.parse(saved));
-    } else {
-      setServices(defaultServices);
-    }
+    setServices(getStoredServices());
   }, []);
 
   const saveToStorage = (updated: ServiceData[]) => {
-    setServices(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    setServices(saveStoredServices(updated));
   };
 
   const handleAddOrUpdate = (e: React.FormEvent) => {
@@ -102,7 +88,7 @@ export default function ServicesAdmin() {
       process: parsedProcess,
       benefits: parsedBenefits,
       testimonial: { quote, author },
-    } as any;
+    };
 
     if (isEditing) {
       const updated = services.map((s) => (s.slug === isEditing ? serviceObj : s));
@@ -115,11 +101,11 @@ export default function ServicesAdmin() {
     resetForm();
   };
 
-  const handleEdit = (service: any) => {
+  const handleEdit = (service: ServiceData) => {
     setIsEditing(service.slug);
     setSlug(service.slug);
     setName(service.name);
-    setIconName(typeof service.icon === "string" ? service.icon : "Megaphone");
+    setIconName(getServiceIconName(service.icon));
     setHeroTitle(service.heroTitle || "");
     setHeroSubtitle(service.heroSubtitle || "");
     setOverview(service.overview || "");
@@ -145,7 +131,7 @@ export default function ServicesAdmin() {
     setIsEditing(null);
     setSlug("");
     setName("");
-    setIconName("Megaphone");
+    setIconName(DEFAULT_SERVICE_ICON);
     setHeroTitle("");
     setHeroSubtitle("");
     setOverview("");
@@ -198,10 +184,10 @@ export default function ServicesAdmin() {
             <label className="text-xs text-gray-400 mb-1 block">Lucide Icon</label>
             <select
               value={iconName}
-              onChange={(e) => setIconName(e.target.value)}
+              onChange={(e) => setIconName(getServiceIconName(e.target.value))}
               className="w-full px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-[#2DD4BF]"
             >
-              {ICON_OPTIONS.map((icon) => (
+              {SERVICE_ICON_OPTIONS.map((icon) => (
                 <option key={icon} value={icon} className="bg-[#123832]">
                   {icon}
                 </option>

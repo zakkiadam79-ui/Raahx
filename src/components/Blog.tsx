@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { blogsData, getInitials } from "../data/blogsData";
 import { servicesData } from "../data/servicesData";
+import { getServiceIcon } from "../utils/getServiceIcon";
 
 function getService(serviceSlug: string) {
   return servicesData.find((s) => s.slug === serviceSlug);
@@ -50,7 +51,7 @@ export default function Blog() {
           className="group grid md:grid-cols-2 gap-0 bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 mb-8"
         >
           <div className="relative h-56 md:h-auto">
-            <CoverArt Icon={featuredService?.icon ?? (() => null)} />
+            <CoverArt Icon={featuredService ? getServiceIcon(featuredService.icon) : (() => null)} />
             {featuredService && (
               <span className="absolute top-5 left-5 inline-block text-xs font-semibold text-secondary bg-white px-3 py-1.5 rounded-full shadow-sm">
                 {featuredService.name}
@@ -93,7 +94,7 @@ export default function Blog() {
                 className="group flex flex-col bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
               >
                 <div className="relative h-40">
-                  <CoverArt Icon={service?.icon ?? (() => null)} />
+                  <CoverArt Icon={service ? getServiceIcon(service.icon) : (() => null)} />
                   {service && (
                     <span className="absolute top-4 left-4 inline-block text-xs font-semibold text-secondary bg-white px-3 py-1 rounded-full shadow-sm">
                       {service.name}

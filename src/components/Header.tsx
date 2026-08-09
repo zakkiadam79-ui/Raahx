@@ -4,6 +4,7 @@ import { Menu, X, ChevronDown } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import logoImage from "../assets/images/logo.png";
 import { servicesData } from "../data/servicesData";
+import { getServiceIcon } from "../utils/getServiceIcon";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -97,7 +98,7 @@ export default function Header() {
                   style={{ backgroundColor: "#ffffff" }}
                 >
                   {servicesData.map((service) => {
-                    const Icon = service.icon;
+                    const Icon = getServiceIcon(service.icon);
                     return (
                       <Link
                         key={service.slug}

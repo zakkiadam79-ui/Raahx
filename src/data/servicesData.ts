@@ -1,9 +1,9 @@
-import { Megaphone, Search, PenTool, MonitorSmartphone, Share2, Palette, Target, Cpu, Briefcase, Code2, LucideIcon } from "lucide-react";
+import type { ServiceIconName } from "../utils/getServiceIcon";
 
 export interface ServiceData {
   slug: string;
   name: string;
-  icon: LucideIcon;
+  icon: ServiceIconName;
   heroTitle: string;
   heroSubtitle: string;
   overview: string;
@@ -19,7 +19,7 @@ export const servicesData: ServiceData[] = [
   {
     slug: "digital-marketing",
     name: "Digital Marketing Services",
-    icon: Megaphone,
+    icon: "Megaphone",
     heroTitle: "Accelerate Business Growth with AI-Powered Digital Marketing",
     heroSubtitle: "Turn data into revenue with integrated, high-performance marketing strategies built for today's competitive landscape.",
     overview: "Grow your business with digital marketing strategies that actually move the needle. RaahX combines AI, data analytics, creative agility, and performance marketing to help you attract qualified customers, increase conversions, and maximize revenue. From high-level strategy development to granular campaign execution, every solution we deploy is customized to achieve measurable business growth.",
@@ -46,7 +46,7 @@ export const servicesData: ServiceData[] = [
   {
     slug: "social-media-marketing",
     name: "Social Media Marketing",
-    icon: Share2,
+    icon: "Share2",
     heroTitle: "Build a Stronger Brand Through Strategic Social Media",
     heroSubtitle: "Turn scrolling audiences into loyal customers with content that captivates and converts.",
     overview: "Your customers spend hours on social media every day. RaahX helps your business capture their attention with engaging content, consistent branding, and strategic campaigns designed to increase awareness, build trust, and generate quality leads across every major platform.",
@@ -73,7 +73,7 @@ export const servicesData: ServiceData[] = [
   {
     slug: "seo-services",
     name: "SEO Services",
-    icon: Search,
+    icon: "Search",
     heroTitle: "Increase Organic Traffic and Long-Term Business Growth",
     heroSubtitle: "Dominate search engine rankings and get found by customers actively looking for what you sell.",
     overview: "Help potential customers find your business at the exact moment they need you. RaahX delivers comprehensive SEO strategies that improve search visibility, increase qualified traffic, and build sustainable online authority through technical optimization, intelligent keyword strategy, and high-quality content generation.",
@@ -100,7 +100,7 @@ export const servicesData: ServiceData[] = [
   {
     slug: "website-development",
     name: "Website Development",
-    icon: MonitorSmartphone,
+    icon: "MonitorSmartphone",
     heroTitle: "Build High-Performance Websites Designed to Convert",
     heroSubtitle: "Your digital storefront, engineered for speed, user experience, and revenue generation.",
     overview: "A professional website is your business's most valuable digital asset. RaahX designs fast, responsive, and conversion-focused websites that combine modern aesthetics, intuitive user experience, and flawless technical performance to turn casual visitors into paying customers.",
@@ -127,7 +127,7 @@ export const servicesData: ServiceData[] = [
   {
     slug: "branding",
     name: "Branding Services",
-    icon: Palette,
+    icon: "Palette",
     heroTitle: "Create a Brand That Customers Trust and Remember",
     heroSubtitle: "Forge a powerful market identity that separates you from the competition and builds lasting loyalty.",
     overview: "Strong brands create lasting impressions and command premium pricing. RaahX develops complete brand identities—including logos, visual systems, messaging frameworks, brand guidelines, and creative assets—that help businesses establish instant credibility and stand out in fiercely competitive markets.",
@@ -154,7 +154,7 @@ export const servicesData: ServiceData[] = [
   {
     slug: "meta-advertising",
     name: "Meta Advertising Services",
-    icon: Target,
+    icon: "Target",
     heroTitle: "Generate Qualified Leads with High-Performance Meta Ads",
     heroSubtitle: "Turn Facebook and Instagram into your most reliable, scalable engines for customer acquisition.",
     overview: "Reach the exact right audience through professionally managed Facebook and Instagram advertising campaigns. RaahX combines deep audience research, scroll-stopping creative strategy, AI optimization, and continuous A/B testing to maximize your return on ad spend (ROAS) and drive predictable growth.",
@@ -181,7 +181,7 @@ export const servicesData: ServiceData[] = [
   {
     slug: "ai-automation",
     name: "AI Automation Services",
-    icon: Cpu,
+    icon: "Cpu",
     heroTitle: "Automate Business Processes with Intelligent AI Solutions",
     heroSubtitle: "Work smarter, scale faster, and eliminate operational bottlenecks with intelligent technology.",
     overview: "Increase efficiency and drastically reduce operational costs with AI-powered automation. RaahX develops intelligent workflows, custom AI assistants, conversational chatbots, and seamless business automation systems that handle repetitive tasks so your team can focus on what matters most.",
@@ -208,7 +208,7 @@ export const servicesData: ServiceData[] = [
   {
     slug: "graphic-design",
     name: "Graphic Design Services",
-    icon: PenTool,
+    icon: "PenTool",
     heroTitle: "Premium Graphic Design That Strengthens Your Brand",
     heroSubtitle: "Capture attention and communicate value instantly with world-class visual design.",
     overview: "Professional design builds instant credibility and captures attention in a noisy world. RaahX creates impactful visual content—including social media creatives, advertising campaigns, marketing materials, sales presentations, packaging, and digital assets—that communicates your brand's value with total clarity and consistency.",
@@ -235,7 +235,7 @@ export const servicesData: ServiceData[] = [
   {
     slug: "business-strategy",
     name: "Business Strategy & Growth Consulting",
-    icon: Briefcase,
+    icon: "Briefcase",
     heroTitle: "Transform Ideas into Sustainable Business Growth",
     heroSubtitle: "Scale with confidence using data-driven strategies built for the modern digital economy.",
     overview: "Every successful business starts with the right strategy. RaahX partners with founders, startups, SMEs, and growing enterprises to develop highly practical growth strategies. We help you improve market positioning, strengthen customer acquisition channels, and architect scalable business models built for long-term viability.",
@@ -262,7 +262,7 @@ export const servicesData: ServiceData[] = [
   {
     slug: "app-development",
     name: "App Development",
-    icon: Code2,
+    icon: "Code2",
     heroTitle: "Custom App Development Built to Perform",
     heroSubtitle: "From concept to launch, we build fast, reliable mobile and web apps engineered around your users and your business goals.",
     overview: "A great app is more than clean code—it's a product people actually want to use. RaahX designs and builds custom mobile and web applications with a focus on performance, usability, and long-term scalability, so your app grows smoothly alongside your business.",
