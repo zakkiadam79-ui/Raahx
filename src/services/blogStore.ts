@@ -18,6 +18,7 @@ export interface BlogPost {
   readTime: string;
   author: string;
   content: BlogContentBlock[];
+  image?: string;
   legacySlugs?: string[];
   [key: string]: unknown;
 }
@@ -121,6 +122,7 @@ function normalizeBlogPost(value: unknown, index: number, usedIds: Set<string>, 
   const date = typeof value.date === "string" ? value.date.trim() : "";
   const readTime = typeof value.readTime === "string" && value.readTime.trim() ? value.readTime.trim() : "5 min read";
   const author = typeof value.author === "string" && value.author.trim() ? value.author.trim() : "RaahX Team";
+  const image = typeof value.image === "string" ? value.image.trim() : "";
   const legacySlugs = Array.isArray(value.legacySlugs)
     ? value.legacySlugs
         .filter((legacySlug): legacySlug is string => typeof legacySlug === "string")
@@ -139,6 +141,7 @@ function normalizeBlogPost(value: unknown, index: number, usedIds: Set<string>, 
     readTime,
     author,
     content: normalizeContent(value.content, excerpt),
+    image: image || undefined,
     legacySlugs: legacySlugs.length > 0 ? legacySlugs : undefined,
   } as BlogPost;
 }

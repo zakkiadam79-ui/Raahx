@@ -11,7 +11,32 @@ function getService(serviceSlug: string, services: ServiceData[]) {
   return services.find((service) => service.slug === serviceSlug);
 }
 
-function CoverArt({ Icon }: { Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }> }) {
+function CoverArt({
+  Icon,
+  image,
+}: {
+  Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  image?: string;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [image]);
+
+  if (image && !imageFailed) {
+    return (
+      <div className="relative h-full w-full overflow-hidden bg-secondary">
+        <img
+          src={image}
+          alt=""
+          onError={() => setImageFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full bg-gradient-to-br from-secondary via-secondary to-primary/60 overflow-hidden">
       <div
@@ -103,7 +128,10 @@ export default function BlogDetail() {
       <section className="pb-4">
         <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <div className="h-64 md:h-80 rounded-3xl overflow-hidden shadow-lg">
-            <CoverArt Icon={service ? getServiceIcon(service.icon) : (() => null)} />
+            <CoverArt
+              Icon={service ? getServiceIcon(service.icon) : (() => null)}
+              image={post.image}
+            />
           </div>
         </div>
       </section>
@@ -171,7 +199,10 @@ export default function BlogDetail() {
                   className="group flex flex-col bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
                 >
                   <div className="relative h-36">
-                    <CoverArt Icon={moreService ? getServiceIcon(moreService.icon) : (() => null)} />
+                    <CoverArt
+                      Icon={moreService ? getServiceIcon(moreService.icon) : (() => null)}
+                      image={morePost.image}
+                    />
                     {moreService && (
                       <span className="absolute top-3 left-3 inline-block text-xs font-semibold text-secondary bg-white px-2.5 py-1 rounded-full shadow-sm">
                         {moreService.name}

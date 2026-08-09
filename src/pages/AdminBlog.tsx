@@ -59,6 +59,7 @@ export default function AdminBlog() {
   const [services, setServices] = useState<ServiceData[]>(() => getStoredServices());
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [imagePreviewFailed, setImagePreviewFailed] = useState(false);
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
@@ -84,6 +85,7 @@ export default function AdminBlog() {
       content: [{ type: "paragraph", text: "" }],
     });
     setSlugManuallyEdited(false);
+    setImagePreviewFailed(false);
     setFormError("");
   };
 
@@ -96,6 +98,7 @@ export default function AdminBlog() {
       })),
     });
     setSlugManuallyEdited(true);
+    setImagePreviewFailed(false);
     setFormError("");
   };
 
@@ -127,6 +130,7 @@ export default function AdminBlog() {
     const author = editingPost.author.trim();
     const date = editingPost.date.trim();
     const readTime = editingPost.readTime.trim();
+    const image = typeof editingPost.image === "string" ? editingPost.image.trim() : "";
     const hasContent = editingPost.content.some((block) => Boolean(blockEditorValue(block).trim()));
 
     if (!title) {
@@ -181,6 +185,7 @@ export default function AdminBlog() {
       author,
       date,
       readTime: readTime || "5 min read",
+      image: image || undefined,
       legacySlugs: previousSlugs,
     };
 
@@ -351,6 +356,52 @@ export default function AdminBlog() {
                   className={`${fieldClassName} mt-2`}
                 />
               </div>
+            </div>
+          </FormSection>
+
+          <FormSection
+            title="Blog Image"
+            description="Optionally replace the existing service-based default cover art for this blog."
+          >
+            <div>
+              <label htmlFor="blog-image" className={labelClassName}>Custom Blog Image</label>
+              <p className={helpTextClassName}>
+                Optional. If you provide an image URL, it will be used for this blog. If you leave it empty, the website will use the existing default image based on the blog's service type.
+              </p>
+              <input
+                id="blog-image"
+                type="text"
+                placeholder="https://example.com/blog-image.jpg"
+                value={editingPost.image ?? ""}
+                onChange={(e) => {
+                  updateEditingPost({ image: e.target.value });
+                  setImagePreviewFailed(false);
+                }}
+                className={`${fieldClassName} mt-2`}
+              />
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              {editingPost.image && !imagePreviewFailed ? (
+                <div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">Custom Image Preview</div>
+                  <div className="h-44 overflow-hidden rounded-xl bg-gray-100">
+                    <img
+                      src={editingPost.image}
+                      alt="Custom blog preview"
+                      onError={() => setImagePreviewFailed(true)}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-emerald-700">Custom image will be used when this blog is displayed publicly.</p>
+                </div>
+              ) : (
+                <div className="flex min-h-24 items-center rounded-xl bg-gray-50 px-4 py-4 text-sm text-gray-600">
+                  {editingPost.image
+                    ? "This image could not be loaded. The public Blog will use the existing default image instead."
+                    : "No custom image — the existing automatic blog image will be used."}
+                </div>
+              )}
             </div>
           </FormSection>
 

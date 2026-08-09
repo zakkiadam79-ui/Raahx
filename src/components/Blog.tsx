@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { getInitials } from "../data/blogsData";
@@ -11,7 +11,32 @@ function getService(serviceSlug: string, services: ServiceData[]) {
   return services.find((service) => service.slug === serviceSlug);
 }
 
-function CoverArt({ Icon }: { Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }> }) {
+function CoverArt({
+  Icon,
+  image,
+}: {
+  Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  image?: string;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [image]);
+
+  if (image && !imageFailed) {
+    return (
+      <div className="relative h-full w-full overflow-hidden bg-secondary">
+        <img
+          src={image}
+          alt=""
+          onError={() => setImageFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full bg-gradient-to-br from-secondary via-secondary to-primary/60 overflow-hidden">
       <div
@@ -68,7 +93,10 @@ export default function Blog() {
           className="group grid md:grid-cols-2 gap-0 bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 mb-8"
         >
           <div className="relative h-56 md:h-auto">
-            <CoverArt Icon={featuredService ? getServiceIcon(featuredService.icon) : (() => null)} />
+            <CoverArt
+              Icon={featuredService ? getServiceIcon(featuredService.icon) : (() => null)}
+              image={featured.image}
+            />
             {featuredService && (
               <span className="absolute top-5 left-5 inline-block text-xs font-semibold text-secondary bg-white px-3 py-1.5 rounded-full shadow-sm">
                 {featuredService.name}
@@ -111,7 +139,10 @@ export default function Blog() {
                 className="group flex flex-col bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
               >
                 <div className="relative h-40">
-                  <CoverArt Icon={service ? getServiceIcon(service.icon) : (() => null)} />
+                  <CoverArt
+                    Icon={service ? getServiceIcon(service.icon) : (() => null)}
+                    image={post.image}
+                  />
                   {service && (
                     <span className="absolute top-4 left-4 inline-block text-xs font-semibold text-secondary bg-white px-3 py-1 rounded-full shadow-sm">
                       {service.name}
