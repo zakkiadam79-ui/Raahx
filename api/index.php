@@ -45,6 +45,10 @@ try {
         api_dispatch_case_studies($pdo, $config, $method, array_slice($segments, 1), $body);
     }
 
+    if ($resource === 'migration') {
+        api_dispatch_migration($pdo, $config, $method, array_slice($segments, 1), $body);
+    }
+
     throw new ApiException(404, 'NOT_FOUND', 'API endpoint not found.');
 } catch (ApiException $exception) {
     Http::error($exception);
@@ -221,4 +225,36 @@ function api_dispatch_case_studies(PDO $pdo, array $config, string $method, arra
     }
 
     throw new ApiException(404, 'NOT_FOUND', 'Case Study endpoint not found.');
+}
+
+function api_dispatch_migration(PDO $pdo, array $config, string $method, array $segments, array $body): void
+{
+    Auth::requireAuthenticated($pdo, $config);
+
+    if (count($segments) !== 1) {
+        throw new ApiException(404, 'NOT_FOUND', 'Migration endpoint not found.');
+    }
+
+    $action = $segments[0];
+    if ($method !== 'POST') {
+        Http::methodNotAllowed(['POST']);
+    }
+
+    if ($action === 'validate') {
+        $validated = api_migration_validate($pdo, $body);
+        Http::json([
+            'dry_run' => true,
+            'imported' => false,
+            'counts' => $validated['counts'],
+            'message' => 'Migration payload is valid and ready for review.',
+        ]);
+    }
+
+    if ($action === 'import') {
+        $dryRun = isset($_GET['dry_run']) && in_array((string) $_GET['dry_run'], ['1', 'true'], true);
+        $result = api_migration_import($pdo, $body, $dryRun);
+        Http::json($result);
+    }
+
+    throw new ApiException(404, 'NOT_FOUND', 'Migration endpoint not found.');
 }

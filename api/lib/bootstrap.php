@@ -9,6 +9,7 @@ require_once __DIR__ . '/../resources/services.php';
 require_once __DIR__ . '/../resources/team.php';
 require_once __DIR__ . '/../resources/blogs.php';
 require_once __DIR__ . '/../resources/case_studies.php';
+require_once __DIR__ . '/../resources/migration.php';
 
 function raahx_env(string $key, ?string $default = null): ?string
 {

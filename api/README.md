@@ -56,4 +56,19 @@ Authentication foundation:
 - `GET /api/auth/session`
 - `POST /api/auth/logout`
 
+Authenticated migration foundation:
+
+- `POST /api/migration/validate`
+- `POST /api/migration/import`
+- `POST /api/migration/import?dry_run=1`
+
+Migration endpoints accept the versioned JSON export produced by
+`src/services/migrationExport.ts`. The utility reads the complete normalized
+browser dataset, validates it, and exposes `downloadMigrationPayload()` for a
+local JSON backup. It does not connect normal frontend rendering to the API.
+
+The API validates stable IDs, slugs, child records, and service relationships
+before importing. Imports upsert records by preserved IDs inside one
+transaction and do not delete parents missing from the payload.
+
 All responses use `{ "success": true, "data": ... }` or a structured error response.
