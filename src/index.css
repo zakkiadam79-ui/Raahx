@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #0F766E;
+  --color-primary-dark: #0B5E57;
+  --color-secondary: #111111;
+  --color-background: #FFFFFF;
+  --color-surface: #F8FAFC;
+  --color-border: #E5E7EB;
+  --color-body: #4B5563;
+  --color-success: #10B981;
+
+  --font-heading: "Sora", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
+
+@layer base {
+  html, body {
+    font-family: var(--font-body);
+    scroll-behavior: smooth;
+    background-color: var(--color-background);
+    color: var(--color-secondary);
+    overflow-x: hidden; 
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+  p {
+    color: var(--color-body);
+  }
+}
+
+@layer utilities {
+  /* Bars scale up super slow & smooth with a 5s pause */
+  .animate-bar {
+    transform-origin: bottom;
+    transform-box: fill-box; 
+    animation: scaleUpBarSuperSlow 10s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+    transform: scaleY(0);
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+
+  /* Arrow super slow reveal with pause loop */
+  .animate-reveal-circle {
+    animation: revealCircleSuperSlow 10s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  }
+
+  /* Node slide-up with slightly more active floating speed */
+  .animate-node-slide-up {
+    animation: 
+      nodePopUp 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, 
+      nodeBreathFloatFast 2.5s ease-in-out infinite alternate 1s;
+    will-change: transform, opacity;
+  }
+
+  .animate-float-slow {
+    animation: organicHoverX 5s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  
+  .animate-float-delayed {
+    animation: organicHoverY 6s ease-in-out infinite alternate 1.5s;
+    will-change: transform;
+  }
+
+  .animate-shimmer {
+    animation: activeDataScan 2s infinite linear;
+  }
+
+  /* Continuous horizontal scroll for the mobile/tablet service strip.
+     Track is rendered twice back-to-back, so translating by exactly -50%
+     loops seamlessly. */
+  .animate-marquee {
+    animation: marqueeScroll 26s linear infinite;
+  }
+}
+
+/* --- KEYFRAMES --- */
+
+@keyframes scaleUpBarSuperSlow {
+  0% { transform: scaleY(0); opacity: 0; }
+  25% { transform: scaleY(1); opacity: 1; }
+  85% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(0); opacity: 0; }
+}
+
+@keyframes revealCircleSuperSlow {
+  0% { r: 0; opacity: 0; }
+  25% { r: 1200px; opacity: 1; }
+  85% { r: 1200px; opacity: 1; }
+  100% { r: 0; opacity: 0; }
+}
+
+@keyframes nodePopUp {
+  0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); }
+  60% { opacity: 1; transform: translate(-50%, -55%) scale(1.1); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes nodeBreathFloatFast {
+  0% { transform: translate(-50%, -50%); }
+  100% { transform: translate(-50%, calc(-50% - 10px)); }
+}
+
+@keyframes organicHoverX {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-4px, -12px); }
+}
+
+@keyframes organicHoverY {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(4px, -12px); }
+}
+
+@keyframes activeDataScan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+@keyframes marqueeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Premium Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-surface); 
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary); 
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-dark); 
+}

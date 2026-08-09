@@ -1,0 +1,8 @@
+{
+  "name": " RaahX Digital Marketing",
+  "description": "A premium, fully-responsive digital marketing agency website with a proposal submission backend.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
