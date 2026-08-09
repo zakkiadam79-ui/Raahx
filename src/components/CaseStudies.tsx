@@ -1,17 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
-import { defaultCaseStudies, CaseStudyData } from "../data/caseStudiesData";
+import { getStoredCaseStudies, type CaseStudyRecord } from "../services/caseStudyStore";
 
 export default function CaseStudies() {
-  const [caseStudies, setCaseStudies] = useState<CaseStudyData[]>(defaultCaseStudies);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("raahx_casestudies_data");
-    if (saved) {
-      setCaseStudies(JSON.parse(saved));
-    }
-  }, []);
+  const [caseStudies] = useState<CaseStudyRecord[]>(() => getStoredCaseStudies());
 
   return (
     <section id="case-studies" className="py-24 bg-secondary text-white">
@@ -29,7 +22,7 @@ export default function CaseStudies() {
 
         <div className="grid lg:grid-cols-2 gap-8">
           {caseStudies.map((study) => (
-            <div key={study.slug} className="bg-white/5 rounded-3xl p-8 border border-white/10 hover:bg-white/10 transition-colors flex flex-col justify-between">
+            <div key={study.id} className="bg-white/5 rounded-3xl p-8 border border-white/10 hover:bg-white/10 transition-colors flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-start mb-8">
                   <h3 className="text-2xl font-heading font-semibold text-teal-300">{study.client}</h3>
@@ -41,7 +34,7 @@ export default function CaseStudies() {
                     <ArrowUpRight size={20} />
                   </Link>
                 </div>
-                
+
                 <div className="space-y-6 mb-8">
                   <div>
                     <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Challenge</h4>
@@ -55,8 +48,8 @@ export default function CaseStudies() {
               </div>
 
               <div className="grid grid-cols-3 gap-4 pt-8 border-t border-white/10">
-                {study.metrics.map((metric, mIdx) => (
-                  <div key={mIdx}>
+                {study.metrics.map((metric, metricIndex) => (
+                  <div key={metricIndex}>
                     <div className="text-2xl md:text-3xl font-heading font-bold text-white mb-1">{metric.value}</div>
                     <div className="text-xs md:text-sm text-gray-400">{metric.label}</div>
                   </div>
