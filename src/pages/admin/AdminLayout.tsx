@@ -11,6 +11,7 @@ import TeamAdmin from "../../components/admin/TeamAdmin";
 import AdminBlog from "../AdminBlog";
 import AdminDashboard from "../AdminDashboard";
 import SecretAdminLogin from "../SecretAdminLogin";
+import { isServiceApiConfigured, serviceApiUrl } from "../../services/serviceStore";
 
 type AuthState = "checking" | "authenticated" | "unauthenticated";
 
@@ -36,7 +37,29 @@ export default function AdminLayout() {
         }
 
         const data = (await response.json()) as { authenticated?: boolean };
-        setAuthState(data.authenticated === true ? "authenticated" : "unauthenticated");
+        if (data.authenticated !== true) {
+          setAuthState("unauthenticated");
+          return;
+        }
+
+        if (isServiceApiConfigured()) {
+          const phpResponse = await fetch(serviceApiUrl("/auth/session"), {
+            method: "GET",
+            credentials: "include",
+            signal: controller.signal,
+          });
+          const phpData = await phpResponse.json().catch(() => null) as {
+            success?: boolean;
+            data?: { authenticated?: boolean };
+          } | null;
+
+          if (phpResponse.status === 401 || phpData?.data?.authenticated === false) {
+            setAuthState("unauthenticated");
+            return;
+          }
+        }
+
+        setAuthState("authenticated");
       } catch {
         if (!controller.signal.aborted) {
           setAuthState("unauthenticated");
@@ -55,6 +78,12 @@ export default function AdminLayout() {
         method: "POST",
         credentials: "include",
       });
+      if (isServiceApiConfigured()) {
+        await fetch(serviceApiUrl("/auth/logout"), {
+          method: "POST",
+          credentials: "include",
+        });
+      }
     } catch {
       // Clear the local UI state even if the network request fails.
     } finally {

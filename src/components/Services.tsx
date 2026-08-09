@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { servicesData as staticServices, ServiceData } from "../data/servicesData";
-import { getStoredServices } from "../services/serviceStore";
+import {
+  fetchServicesFromApi,
+  getStoredServices,
+  isServiceApiConfigured,
+  type ServiceRecord,
+} from "../services/serviceStore";
 import { getServiceIcon } from "../utils/getServiceIcon";
 
 const cardPattern = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
@@ -25,10 +30,29 @@ const cardStyles = [
 ];
 
 export default function Services() {
-  const [services, setServices] = useState<ServiceData[]>(staticServices);
+  const [services, setServices] = useState<ServiceRecord[]>(staticServices);
 
   useEffect(() => {
+    let isMounted = true;
     setServices(getStoredServices());
+
+    if (!isServiceApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    fetchServicesFromApi()
+      .then((remoteServices) => {
+        if (isMounted) setServices(remoteServices);
+      })
+      .catch((error) => {
+        console.warn("Services API unavailable; using the local service fallback.", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (

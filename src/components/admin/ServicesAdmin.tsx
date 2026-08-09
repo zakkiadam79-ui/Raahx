@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Check, Edit2, Plus, Trash2, X } from "lucide-react";
-import { type ServiceData } from "../../data/servicesData";
-import { getStoredServices, saveStoredServices } from "../../services/serviceStore";
+import {
+  createServiceViaApi,
+  deleteServiceViaApi,
+  fetchServicesFromApi,
+  getStoredServices,
+  isServiceApiConfigured,
+  saveStoredServices,
+  ServiceApiError,
+  type ServiceRecord,
+  updateServiceViaApi,
+} from "../../services/serviceStore";
 import {
   DEFAULT_SERVICE_ICON,
   getServiceIcon,
@@ -34,9 +43,21 @@ function FormSection({ title, description, children }: FormSectionProps) {
   );
 }
 
+function getServiceApiErrorMessage(error: unknown): string {
+  if (error instanceof ServiceApiError) {
+    if (error.status === 401 || error.status === 403) return "The PHP API session is not authenticated. Sign out and sign in again.";
+    if (error.status === 409) return error.message;
+    return error.message;
+  }
+  return "The Services API is unavailable. Your local fallback data is still available.";
+}
+
 export default function ServicesAdmin() {
-  const [services, setServices] = useState<ServiceData[]>([]);
+  const [services, setServices] = useState<ServiceRecord[]>([]);
   const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [apiError, setApiError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Core Service Fields
   const [slug, setSlug] = useState("");
@@ -64,14 +85,29 @@ export default function ServicesAdmin() {
   const [author, setAuthor] = useState("");
 
   useEffect(() => {
+    let isMounted = true;
     setServices(getStoredServices());
+
+    if (!isServiceApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    fetchServicesFromApi()
+      .then((remoteServices) => {
+        if (isMounted) setServices(remoteServices);
+      })
+      .catch((error) => {
+        if (isMounted) setApiError(getServiceApiErrorMessage(error));
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const saveToStorage = (updated: ServiceData[]) => {
-    setServices(saveStoredServices(updated));
-  };
-
-  const handleAddOrUpdate = (e: React.FormEvent) => {
+  const handleAddOrUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !slug) return;
 
@@ -99,34 +135,62 @@ export default function ServicesAdmin() {
       })
       .filter((benefit) => benefit.title);
 
-    const serviceObj: ServiceData = {
-      slug,
-      name,
+    const serviceObj: ServiceRecord = {
+      slug: slug.trim(),
+      name: name.trim(),
       icon: iconName,
-      heroTitle,
-      heroSubtitle,
-      overview,
-      whyChooseTitle,
-      whyChooseText,
+      heroTitle: heroTitle.trim(),
+      heroSubtitle: heroSubtitle.trim(),
+      overview: overview.trim(),
+      whyChooseTitle: whyChooseTitle.trim(),
+      whyChooseText: whyChooseText.trim(),
       stats: parsedStats,
       process: parsedProcess,
       benefits: parsedBenefits,
-      testimonial: { quote, author },
+      testimonial: { quote: quote.trim(), author: author.trim() },
     };
+    const existing = isEditing
+      ? services.find((service) => service.id === isEditing || service.slug === isEditing)
+      : undefined;
 
-    if (isEditing) {
-      const updated = services.map((service) => (service.slug === isEditing ? serviceObj : service));
-      saveToStorage(updated);
-      setIsEditing(null);
-    } else {
-      saveToStorage([...services, serviceObj]);
+    setApiError("");
+    setSuccessMessage("");
+    setIsSaving(true);
+
+    try {
+      if (isServiceApiConfigured()) {
+        if (existing) {
+          if (!existing.id) {
+            throw new ServiceApiError(400, "MISSING_SERVICE_ID", "This service has no API ID. Reload the Services list before editing it.");
+          }
+          const updatedService = await updateServiceViaApi(existing.id, serviceObj, existing.displayOrder);
+          setServices((current) => current.map((service) => service.id === existing.id ? updatedService : service));
+          setSuccessMessage("Service updated in the PHP API and MySQL.");
+        } else {
+          const createdService = await createServiceViaApi(serviceObj, services.length);
+          setServices((current) => [...current, createdService]);
+          setSuccessMessage("Service created in the PHP API and MySQL.");
+        }
+      } else {
+        // Keep the existing browser-only behavior available until a PHP API URL
+        // is configured for this environment.
+        const localRecord: ServiceRecord = { ...serviceObj, id: existing?.id, displayOrder: existing?.displayOrder ?? services.length };
+        const updated = existing
+          ? services.map((service) => service.id === existing.id || service.slug === existing.slug ? localRecord : service)
+          : [...services, localRecord];
+        setServices(saveStoredServices(updated));
+        setSuccessMessage("Service saved to the local fallback. Configure VITE_API_BASE_URL to use MySQL.");
+      }
+      resetForm();
+    } catch (error) {
+      setApiError(getServiceApiErrorMessage(error));
+    } finally {
+      setIsSaving(false);
     }
-
-    resetForm();
   };
 
-  const handleEdit = (service: ServiceData) => {
-    setIsEditing(service.slug);
+  const handleEdit = (service: ServiceRecord) => {
+    setIsEditing(service.id ?? service.slug);
     setSlug(service.slug);
     setName(service.name);
     setIconName(getServiceIconName(service.icon));
@@ -144,13 +208,33 @@ export default function ServicesAdmin() {
     setAuthor(service.testimonial?.author || "");
   };
 
-  const handleDelete = (slugToDelete: string) => {
-    if (confirm("Are you sure you want to delete this service?")) {
-      saveToStorage(services.filter((service) => service.slug !== slugToDelete));
+  const handleDelete = async (service: ServiceRecord) => {
+    if (!confirm(`Delete "${service.name}"?\n\nThis removes the service from the public website.`)) return;
+
+    setApiError("");
+    setSuccessMessage("");
+    setIsSaving(true);
+    try {
+      if (isServiceApiConfigured()) {
+        if (!service.id) {
+          throw new ServiceApiError(400, "MISSING_SERVICE_ID", "This service has no API ID. Reload the Services list before deleting it.");
+        }
+        await deleteServiceViaApi(service.id);
+        setServices((current) => current.filter((item) => item.id !== service.id));
+        setSuccessMessage("Service deleted from the PHP API and MySQL.");
+      } else {
+        setServices(saveStoredServices(services.filter((item) => item.id !== service.id && item.slug !== service.slug)));
+        setSuccessMessage("Service deleted from the local fallback. Configure VITE_API_BASE_URL to use MySQL.");
+      }
+    } catch (error) {
+      setApiError(getServiceApiErrorMessage(error));
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const resetForm = () => {
+    setApiError("");
     setIsEditing(null);
     setSlug("");
     setName("");
@@ -188,6 +272,17 @@ export default function ServicesAdmin() {
             {isEditing ? "Editing existing service" : "New service"}
           </span>
         </div>
+
+        {apiError && (
+          <p role="alert" className="rounded-xl border border-red-300/40 bg-red-950/30 px-4 py-3 text-sm font-medium text-red-200">
+            {apiError}
+          </p>
+        )}
+        {successMessage && (
+          <p role="status" className="rounded-xl border border-emerald-300/30 bg-emerald-950/30 px-4 py-3 text-sm font-medium text-emerald-200">
+            {successMessage}
+          </p>
+        )}
 
         <FormSection
           title="Service Basic Information"
@@ -422,10 +517,11 @@ export default function ServicesAdmin() {
         <div className="flex flex-wrap gap-3 border-t border-white/15 pt-5">
           <button
             type="submit"
-            className="flex items-center gap-2 rounded-xl bg-[#14B8A6] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#14B8A6]/10 transition-all hover:bg-[#0d9488] focus:outline-none focus:ring-2 focus:ring-[#7FF5DE] focus:ring-offset-2 focus:ring-offset-[#0B241F]"
+            disabled={isSaving}
+            className="flex items-center gap-2 rounded-xl bg-[#14B8A6] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#14B8A6]/10 transition-all hover:bg-[#0d9488] focus:outline-none focus:ring-2 focus:ring-[#7FF5DE] focus:ring-offset-2 focus:ring-offset-[#0B241F] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isEditing ? <Check size={16} /> : <Plus size={16} />}
-            {isEditing ? "Update Service Detail Page" : "Add Service Detail Page"}
+            {isSaving ? "Saving..." : isEditing ? "Update Service Detail Page" : "Add Service Detail Page"}
           </button>
 
           {isEditing && (
@@ -466,7 +562,7 @@ export default function ServicesAdmin() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDelete(service.slug)}
+                  onClick={() => void handleDelete(service)}
                   aria-label={`Delete ${service.name}`}
                   className="rounded-lg p-2 text-red-300 transition hover:bg-red-500/20 hover:text-red-200 focus:outline-none focus:ring-2 focus:ring-red-300"
                 >

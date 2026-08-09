@@ -4,7 +4,11 @@ import { Menu, X, ChevronDown } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import logoImage from "../assets/images/logo.png";
 import { servicesData as staticServices, type ServiceData } from "../data/servicesData";
-import { getStoredServices } from "../services/serviceStore";
+import {
+  fetchServicesFromApi,
+  getStoredServices,
+  isServiceApiConfigured,
+} from "../services/serviceStore";
 import { getServiceIcon } from "../utils/getServiceIcon";
 
 export default function Header() {
@@ -18,7 +22,26 @@ export default function Header() {
   // Keep the header menu synchronized with the same normalized service store
   // used by the public Services section and service detail pages.
   useEffect(() => {
+    let isMounted = true;
     setServices(getStoredServices());
+
+    if (!isServiceApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    fetchServicesFromApi()
+      .then((remoteServices) => {
+        if (isMounted) setServices(remoteServices);
+      })
+      .catch((error) => {
+        console.warn("Services API unavailable; using the local service fallback.", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Close mobile menu + lock background scroll while it's open
