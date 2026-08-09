@@ -375,7 +375,7 @@ async function startServer() {
       const adminMailOptions = {
         from: `"${data.fullName}" <${process.env.SMTP_USER}>`, // Use authenticated user as sender to avoid DMARC issues
         replyTo: data.businessEmail,
-        to: process.env.NOTIFICATION_EMAIL || "dngroup786@gmail.com",
+        to: process.env.NOTIFICATION_EMAIL || "hello@raahx.com",
         subject: "New Proposal Request - RaahX",
         html: `
           <h2>New Proposal Request</h2>

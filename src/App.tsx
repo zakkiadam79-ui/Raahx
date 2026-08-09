@@ -13,7 +13,10 @@ import CaseStudies from "./components/CaseStudies";
 import Process from "./components/Process";
 import Team from "./components/Team";
 import ProposalForm from "./components/ProposalForm";
+import FAQ from "./components/FAQ";
 import Footer from "./components/Footer";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import FloatingWhatsApp from "./components/FloatingWhatsApp";
 import ServiceDetail from "./pages/ServiceDetail";
 import AboutPage from "./pages/AboutPage";
@@ -51,6 +54,7 @@ function Home() {
       <WhyChooseUs />
       <CaseStudies />
       <Team />
+      <FAQ />
       <ProposalForm />
     </main>
   );
@@ -72,6 +76,8 @@ export default function App() {
         <Route path="/blog" element={<BlogIndex />} />
         <Route path="/blog/:slug" element={<BlogDetail />} />
         <Route path="/proposal" element={<ProposalForm />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/admin/*" element={<AdminLayout />} /> {/* <-- Added Admin Route */}
       </Routes>
       {!isAdminRoute && <Footer />}

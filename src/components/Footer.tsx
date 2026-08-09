@@ -1,6 +1,7 @@
 /** @jsxRuntime classic */
 /** @jsx React.createElement */
 import React from "react";
+import { Link } from "react-router-dom";
 import { Facebook, Instagram, Phone, Mail, MapPin } from "lucide-react";
 import logoImage from "../assets/images/logo.png";
 
@@ -68,7 +69,7 @@ export default function Footer() {
               </li>
               <li className="flex items-start gap-3">
                 <Mail className="w-5 h-5 text-primary shrink-0" />
-                <a href="mailto:itsqasim.work@gmail.com" className="hover:text-white transition-colors">itsqasim.work@gmail.com</a>
+                <a href="mailto:hello@raahx.com" className="hover:text-white transition-colors">hello@raahx.com</a>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-primary shrink-0" />
@@ -89,8 +90,8 @@ export default function Footer() {
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
           <p>&copy; {} 2025 RaahX. All rights reserved.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+            <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>
