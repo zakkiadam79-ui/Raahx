@@ -1,10 +1,40 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
-import { getStoredCaseStudies, type CaseStudyRecord } from "../services/caseStudyStore";
+import {
+  fetchCaseStudiesFromApi,
+  getStoredCaseStudies,
+  isCaseStudyApiConfigured,
+  type CaseStudyRecord,
+} from "../services/caseStudyStore";
 
 export default function CaseStudies() {
-  const [caseStudies] = useState<CaseStudyRecord[]>(() => getStoredCaseStudies());
+  const [caseStudies, setCaseStudies] = useState<CaseStudyRecord[]>(() => getStoredCaseStudies());
+
+  useEffect(() => {
+    let isMounted = true;
+    const fallbackStudies = getStoredCaseStudies();
+
+    if (!isCaseStudyApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    fetchCaseStudiesFromApi()
+      .then((remoteStudies) => {
+        if (isMounted && (remoteStudies.length > 0 || fallbackStudies.length === 0)) {
+          setCaseStudies(remoteStudies);
+        }
+      })
+      .catch((error) => {
+        console.warn("Case Study API unavailable; using the local fallback.", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <section id="case-studies" className="py-24 bg-secondary text-white">

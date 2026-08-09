@@ -5,14 +5,27 @@ import {
   type Metric,
   type Testimonial,
 } from "../data/caseStudiesData";
+import { isServiceApiConfigured, serviceApiUrl } from "./serviceStore";
 
 export type CaseStudyRecord = CaseStudyData & {
   id: string;
+  displayOrder?: number;
   legacySlugs?: string[];
 };
 
 export const CASE_STUDY_STORAGE_KEY = "raahx_casestudies_data";
 const CASE_STUDY_MIGRATION_KEY = "raahx_casestudies_data_v2_migrated";
+
+export class CaseStudyApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "CaseStudyApiError";
+  }
+}
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -246,3 +259,151 @@ export function getCaseStudyBySlug(studies: CaseStudyRecord[], slug: string): Ca
 export function normalizeCaseStudySlug(value: string): string {
   return normalizeSlug(value);
 }
+
+function caseStudyApiErrorMessage(error: unknown): string {
+  if (error instanceof CaseStudyApiError) {
+    if (error.status === 401 || error.status === 403) return "The PHP API session is not authenticated. Sign in again before changing Case Study data.";
+    return error.message;
+  }
+  return "The Case Study API is unavailable.";
+}
+
+async function caseStudyApiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(serviceApiUrl(path), {
+      ...init,
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        ...(init.body ? { "Content-Type": "application/json" } : {}),
+        ...init.headers,
+      },
+    });
+  } catch {
+    throw new CaseStudyApiError(0, "NETWORK_ERROR", "The Case Study API could not be reached.");
+  }
+
+  const payload = await response.json().catch(() => null) as {
+    success?: boolean;
+    data?: T;
+    error?: { code?: string; message?: string };
+  } | null;
+
+  if (!response.ok || !payload?.success) {
+    throw new CaseStudyApiError(
+      response.status,
+      payload?.error?.code ?? "API_ERROR",
+      payload?.error?.message ?? "The Case Study API returned an error.",
+    );
+  }
+
+  return payload.data as T;
+}
+
+function apiCaseStudyToRecord(value: unknown): CaseStudyRecord | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const raw = value as Record<string, unknown>;
+  const approach = Array.isArray(raw.approach)
+    ? raw.approach.map((step) => {
+        const item = step as Record<string, unknown>;
+        return { title: String(item.title ?? ""), description: String(item.description ?? "") };
+      })
+    : [];
+  const metrics = Array.isArray(raw.metrics)
+    ? raw.metrics.map((metric) => {
+        const item = metric as Record<string, unknown>;
+        return { label: String(item.label ?? ""), value: String(item.value ?? "") };
+      })
+    : [];
+  const testimonial = raw.testimonial && typeof raw.testimonial === "object"
+    ? raw.testimonial as Record<string, unknown>
+    : {};
+
+  return normalizeCaseStudies([{
+    ...raw,
+    id: raw.id,
+    client: raw.client ?? raw.client_name,
+    slug: raw.slug,
+    industry: raw.industry,
+    overview: raw.overview,
+    challenge: raw.challenge,
+    solution: raw.solution,
+    approach,
+    metrics,
+    testimonial: {
+      quote: testimonial.quote ?? raw.testimonial_quote ?? "",
+      author: testimonial.author ?? raw.testimonial_author ?? "",
+    },
+    legacySlugs: raw.legacy_slugs ?? raw.legacySlugs ?? [],
+    displayOrder: raw.display_order ?? raw.displayOrder,
+  }])[0] ?? null;
+}
+
+function caseStudyRecordToApiPayload(study: CaseStudyRecord, displayOrder?: number): Record<string, unknown> {
+  return {
+    ...(study.id ? { id: study.id } : {}),
+    client_name: study.client,
+    slug: study.slug,
+    industry: study.industry,
+    overview: study.overview,
+    challenge: study.challenge,
+    solution: study.solution,
+    approach: study.approach.map((step, index) => ({ ...step, display_order: index })),
+    metrics: study.metrics.map((metric, index) => ({ ...metric, display_order: index })),
+    testimonial: study.testimonial,
+    legacy_slugs: study.legacySlugs ?? [],
+    display_order: displayOrder ?? study.displayOrder ?? 0,
+  };
+}
+
+export async function fetchCaseStudiesFromApi(): Promise<CaseStudyRecord[]> {
+  const data = await caseStudyApiRequest<unknown[]>("/case-studies");
+  if (!Array.isArray(data)) {
+    throw new CaseStudyApiError(502, "INVALID_API_RESPONSE", "The Case Study API returned invalid data.");
+  }
+
+  return normalizeCaseStudies(data.map(apiCaseStudyToRecord).filter((study): study is CaseStudyRecord => study !== null));
+}
+
+export async function fetchCaseStudyByIdFromApi(id: string): Promise<CaseStudyRecord> {
+  const data = await caseStudyApiRequest<unknown>(`/case-studies/${encodeURIComponent(id)}`);
+  const study = apiCaseStudyToRecord(data);
+  if (!study) throw new CaseStudyApiError(502, "INVALID_API_RESPONSE", "The Case Study API returned an invalid record.");
+  return study;
+}
+
+export async function fetchCaseStudyBySlugFromApi(slug: string): Promise<CaseStudyRecord> {
+  const data = await caseStudyApiRequest<unknown>(`/case-studies/slug/${encodeURIComponent(slug)}`);
+  const study = apiCaseStudyToRecord(data);
+  if (!study) throw new CaseStudyApiError(502, "INVALID_API_RESPONSE", "The Case Study API returned an invalid record.");
+  return study;
+}
+
+export async function createCaseStudyViaApi(study: CaseStudyRecord, displayOrder?: number): Promise<CaseStudyRecord> {
+  const data = await caseStudyApiRequest<unknown>("/case-studies", {
+    method: "POST",
+    body: JSON.stringify(caseStudyRecordToApiPayload(study, displayOrder)),
+  });
+  const created = apiCaseStudyToRecord(data);
+  if (!created) throw new CaseStudyApiError(502, "INVALID_API_RESPONSE", "The Case Study API returned an invalid record.");
+  return created;
+}
+
+export async function updateCaseStudyViaApi(id: string, study: CaseStudyRecord, displayOrder?: number): Promise<CaseStudyRecord> {
+  const data = await caseStudyApiRequest<unknown>(`/case-studies/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    body: JSON.stringify(caseStudyRecordToApiPayload({ ...study, id }, displayOrder)),
+  });
+  const updated = apiCaseStudyToRecord(data);
+  if (!updated) throw new CaseStudyApiError(502, "INVALID_API_RESPONSE", "The Case Study API returned an invalid record.");
+  return updated;
+}
+
+export async function deleteCaseStudyViaApi(id: string): Promise<void> {
+  await caseStudyApiRequest<{ deleted: boolean }>(`/case-studies/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+export { caseStudyApiErrorMessage, isServiceApiConfigured as isCaseStudyApiConfigured };

@@ -2,10 +2,17 @@ import React, { useEffect, useState } from "react";
 import { Check, Edit2, Plus, Trash2, X } from "lucide-react";
 import type { ApproachStep, Metric } from "../../data/caseStudiesData";
 import {
+  caseStudyApiErrorMessage,
+  CaseStudyApiError,
+  createCaseStudyViaApi,
+  deleteCaseStudyViaApi,
+  fetchCaseStudiesFromApi,
   getStoredCaseStudies,
+  isCaseStudyApiConfigured,
   normalizeCaseStudySlug,
   saveCaseStudies,
   type CaseStudyRecord,
+  updateCaseStudyViaApi,
 } from "../../services/caseStudyStore";
 
 const fieldClassName =
@@ -40,6 +47,9 @@ export default function CaseStudiesAdmin() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [formError, setFormError] = useState("");
+  const [apiError, setApiError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const [slug, setSlug] = useState("");
   const [client, setClient] = useState("");
@@ -53,7 +63,27 @@ export default function CaseStudiesAdmin() {
   const [author, setAuthor] = useState("");
 
   useEffect(() => {
-    setStudies(getStoredCaseStudies());
+    let isMounted = true;
+    const fallbackStudies = getStoredCaseStudies();
+    setStudies(fallbackStudies);
+
+    if (!isCaseStudyApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    fetchCaseStudiesFromApi()
+      .then((remoteStudies) => {
+        if (isMounted) setStudies(remoteStudies);
+      })
+      .catch((error) => {
+        if (isMounted) setApiError(caseStudyApiErrorMessage(error));
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const clearForm = () => {
@@ -70,6 +100,7 @@ export default function CaseStudiesAdmin() {
     setAuthor("");
     setSlugManuallyEdited(false);
     setFormError("");
+    setApiError("");
   };
 
   const startNewStudy = () => {
@@ -106,7 +137,7 @@ export default function CaseStudiesAdmin() {
     setFormError("");
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const normalizedSlug = normalizeCaseStudySlug(slug || client);
@@ -192,16 +223,60 @@ export default function CaseStudiesAdmin() {
       ? studies.map((study) => (study.id === editingId ? studyToSave : study))
       : [...studies, studyToSave];
 
-    setStudies(saveCaseStudies(updated));
-    clearForm();
+    setApiError("");
+    setSuccessMessage("");
+    setIsSaving(true);
+
+    try {
+      if (isCaseStudyApiConfigured()) {
+        if (previousStudy) {
+          if (!previousStudy.id) {
+            throw new CaseStudyApiError(400, "MISSING_CASE_STUDY_ID", "This Case Study has no API ID. Reload the list before editing it.");
+          }
+          const updatedStudy = await updateCaseStudyViaApi(previousStudy.id, studyToSave, previousStudy.displayOrder);
+          setStudies((current) => current.map((study) => study.id === previousStudy.id ? updatedStudy : study));
+          setSuccessMessage("Case Study updated in the PHP API and MySQL.");
+        } else {
+          const createdStudy = await createCaseStudyViaApi(studyToSave, studies.length);
+          setStudies((current) => [...current, createdStudy]);
+          setSuccessMessage("Case Study created in the PHP API and MySQL.");
+        }
+      } else {
+        setStudies(saveCaseStudies(updated));
+        setSuccessMessage("Case Study saved to the local fallback. Configure VITE_API_BASE_URL to use MySQL.");
+      }
+      clearForm();
+    } catch (error) {
+      setApiError(caseStudyApiErrorMessage(error));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDelete = (study: CaseStudyRecord) => {
+  const handleDelete = async (study: CaseStudyRecord) => {
     if (!confirm(`Delete “${study.client}”?\n\nThis action cannot be undone.`)) return;
-    setStudies(saveCaseStudies(studies.filter((item) => item.id !== study.id)));
 
-    if (editingId === study.id) {
-      clearForm();
+    setApiError("");
+    setSuccessMessage("");
+    setIsSaving(true);
+    try {
+      if (isCaseStudyApiConfigured()) {
+        if (!study.id) {
+          throw new CaseStudyApiError(400, "MISSING_CASE_STUDY_ID", "This Case Study has no API ID. Reload the list before deleting it.");
+        }
+        await deleteCaseStudyViaApi(study.id);
+        setStudies((current) => current.filter((item) => item.id !== study.id));
+        setSuccessMessage("Case Study deleted from the PHP API and MySQL.");
+      } else {
+        setStudies(saveCaseStudies(studies.filter((item) => item.id !== study.id)));
+        setSuccessMessage("Case Study deleted from the local fallback. Configure VITE_API_BASE_URL to use MySQL.");
+      }
+
+      if (editingId === study.id) clearForm();
+    } catch (error) {
+      setApiError(caseStudyApiErrorMessage(error));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -227,6 +302,17 @@ export default function CaseStudiesAdmin() {
             {editingId ? "Editing existing study" : "New case study"}
           </span>
         </div>
+
+        {apiError && (
+          <p role="alert" className="rounded-xl border border-red-300/40 bg-red-950/30 px-4 py-3 text-sm font-medium text-red-200">
+            {apiError}
+          </p>
+        )}
+        {successMessage && (
+          <p role="status" className="rounded-xl border border-emerald-300/30 bg-emerald-950/30 px-4 py-3 text-sm font-medium text-emerald-200">
+            {successMessage}
+          </p>
+        )}
 
         {formError && (
           <p role="alert" className="rounded-xl border border-red-300/40 bg-red-950/30 px-4 py-3 text-sm font-medium text-red-200">
@@ -500,10 +586,11 @@ export default function CaseStudiesAdmin() {
           </button>
           <button
             type="submit"
-            className="flex items-center gap-2 rounded-xl bg-[#14B8A6] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#14B8A6]/10 transition hover:bg-[#0d9488] focus:outline-none focus:ring-2 focus:ring-[#7FF5DE] focus:ring-offset-2 focus:ring-offset-[#0B241F]"
+            disabled={isSaving}
+            className="flex items-center gap-2 rounded-xl bg-[#14B8A6] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#14B8A6]/10 transition hover:bg-[#0d9488] focus:outline-none focus:ring-2 focus:ring-[#7FF5DE] focus:ring-offset-2 focus:ring-offset-[#0B241F] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {editingId ? <Check size={16} /> : <Plus size={16} />}
-            {editingId ? "Update Case Study" : "Add Case Study"}
+            {isSaving ? "Saving..." : editingId ? "Update Case Study" : "Add Case Study"}
           </button>
         </div>
       </form>

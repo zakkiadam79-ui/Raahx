@@ -1,12 +1,56 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowRight, ArrowLeft, TrendingUp } from "lucide-react";
-import { getCaseStudyBySlug, getStoredCaseStudies, type CaseStudyRecord } from "../services/caseStudyStore";
+import {
+  fetchCaseStudyBySlugFromApi,
+  fetchCaseStudiesFromApi,
+  getCaseStudyBySlug,
+  getStoredCaseStudies,
+  isCaseStudyApiConfigured,
+  type CaseStudyRecord,
+} from "../services/caseStudyStore";
 
 export default function CaseStudyDetail() {
   const { slug } = useParams();
-  const [caseStudies] = useState<CaseStudyRecord[]>(() => getStoredCaseStudies());
-  const study = slug ? getCaseStudyBySlug(caseStudies, slug) : undefined;
+  const [caseStudies, setCaseStudies] = useState<CaseStudyRecord[]>(() => getStoredCaseStudies());
+  const [remoteStudy, setRemoteStudy] = useState<CaseStudyRecord | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fallbackStudies = getStoredCaseStudies();
+    setCaseStudies(fallbackStudies);
+    setRemoteStudy(null);
+
+    if (slug && isCaseStudyApiConfigured()) {
+      fetchCaseStudyBySlugFromApi(slug)
+        .then((remote) => {
+          if (isMounted) setRemoteStudy(remote);
+        })
+        .catch((error) => {
+          console.warn("Case Study detail API unavailable; using the local fallback.", error);
+        });
+
+      fetchCaseStudiesFromApi()
+        .then((remoteStudies) => {
+          if (isMounted && (remoteStudies.length > 0 || fallbackStudies.length === 0)) {
+            setCaseStudies(remoteStudies);
+          }
+        })
+        .catch(() => {
+          // The individual detail request still provides the best available fallback.
+        });
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [slug]);
+
+  const study = (remoteStudy && slug && (remoteStudy.slug === slug || remoteStudy.legacySlugs?.includes(slug)))
+    ? remoteStudy
+    : slug
+    ? getCaseStudyBySlug(caseStudies, slug)
+    : undefined;
 
   if (!study) {
     return (
