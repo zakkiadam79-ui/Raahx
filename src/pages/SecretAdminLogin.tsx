@@ -1,24 +1,60 @@
-// src/pages/SecretAdminLogin.tsx
 import React, { useState } from "react";
 
 interface Props {
   onLoginSuccess: () => void;
 }
 
+interface LoginResponse {
+  authenticated?: boolean;
+}
+
 export default function SecretAdminLogin({ onLoginSuccess }: Props) {
   const [passcode, setPasscode] = useState("");
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Set your secret local passcode here
-  const SECRET_PASSCODE = "admin123";
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passcode === SECRET_PASSCODE) {
-      localStorage.setItem("raahx_admin_auth", "true");
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ secret: passcode }),
+      });
+
+      let data: LoginResponse = {};
+      try {
+        data = (await response.json()) as LoginResponse;
+      } catch {
+        // Keep the client-side error generic if the server did not return JSON.
+      }
+
+      if (response.status === 401) {
+        setError("Incorrect passcode");
+        return;
+      }
+
+      if (response.status === 429) {
+        setError("Too many attempts. Please try again later.");
+        return;
+      }
+
+      if (!response.ok || data.authenticated !== true) {
+        setError("Admin authentication is temporarily unavailable.");
+        return;
+      }
+
       onLoginSuccess();
-    } else {
-      setError(true);
+    } catch {
+      setError("Unable to contact the authentication server.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -35,19 +71,22 @@ export default function SecretAdminLogin({ onLoginSuccess }: Props) {
               value={passcode}
               onChange={(e) => {
                 setPasscode(e.target.value);
-                setError(false);
+                setError(null);
               }}
               placeholder="Passcode"
-              className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#2DD4BF]"
+              autoComplete="current-password"
+              disabled={isSubmitting}
+              className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#2DD4BF] disabled:opacity-60"
             />
-            {error && <p className="text-red-400 text-xs mt-2">Incorrect passcode</p>}
+            {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 bg-[#14B8A6] hover:bg-[#0d9488] text-white font-semibold rounded-xl transition-colors"
+            disabled={isSubmitting}
+            className="w-full py-3 bg-[#14B8A6] hover:bg-[#0d9488] text-white font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Authenticate
+            {isSubmitting ? "Authenticating..." : "Authenticate"}
           </button>
         </form>
       </div>

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { 
-  FileText, Briefcase, Users, FolderKanban, LogOut, LayoutDashboard, Menu, X 
+import {
+  FileText, Briefcase, Users, FolderKanban, LogOut, LayoutDashboard, Menu, X
 } from "lucide-react";
 
 // Importing components directly from your existing file structure
@@ -10,11 +10,71 @@ import ServicesAdmin from "../../components/admin/ServicesAdmin";
 import TeamAdmin from "../../components/admin/TeamAdmin";
 import AdminBlog from "../AdminBlog";
 import AdminDashboard from "../AdminDashboard";
+import SecretAdminLogin from "../SecretAdminLogin";
+
+type AuthState = "checking" | "authenticated" | "unauthenticated";
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [authState, setAuthState] = useState<AuthState>("checking");
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const checkSession = async () => {
+      try {
+        const response = await fetch("/api/admin/session", {
+          method: "GET",
+          credentials: "include",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error("Session check failed");
+        }
+
+        const data = (await response.json()) as { authenticated?: boolean };
+        setAuthState(data.authenticated === true ? "authenticated" : "unauthenticated");
+      } catch {
+        if (!controller.signal.aborted) {
+          setAuthState("unauthenticated");
+        }
+      }
+    };
+
+    void checkSession();
+
+    return () => controller.abort();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // Clear the local UI state even if the network request fails.
+    } finally {
+      setAuthState("unauthenticated");
+      setSidebarOpen(false);
+      navigate("/admin", { replace: true });
+    }
+  };
+
+  if (authState === "checking") {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <p className="text-sm text-gray-500">Checking admin session...</p>
+      </div>
+    );
+  }
+
+  if (authState === "unauthenticated") {
+    return <SecretAdminLogin onLoginSuccess={() => setAuthState("authenticated")} />;
+  }
 
   const navItems = [
     { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
@@ -28,9 +88,9 @@ export default function AdminLayout() {
     <div className="min-h-screen bg-gray-100 flex font-body">
       {/* Mobile Overlay */}
       {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden" 
-          onClick={() => setSidebarOpen(false)} 
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
         />
       )}
 
@@ -70,8 +130,8 @@ export default function AdminLayout() {
         </nav>
 
         <div className="p-4 border-t border-white/10">
-          <button 
-            onClick={() => navigate("/")} 
+          <button
+            onClick={() => void handleLogout()}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10"
           >
             <LogOut size={18} />
@@ -94,7 +154,7 @@ export default function AdminLayout() {
 
         <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
           <Routes>
-            <Route path="/" element={<AdminDashboard />} />
+            <Route path="/" element={<AdminDashboard onLogout={() => void handleLogout()} />} />
             <Route path="/blogs" element={<AdminBlog />} />
             <Route path="/services" element={<ServicesAdmin />} />
             <Route path="/case-studies" element={<CaseStudiesAdmin />} />

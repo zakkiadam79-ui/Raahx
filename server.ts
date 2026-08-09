@@ -1,11 +1,132 @@
-import express from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import path from "path";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { createServer as createViteServer } from "vite";
 import mongoose from "mongoose";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+const ADMIN_SESSION_COOKIE = "raahx_admin_session";
+const ADMIN_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 10;
+
+type AdminSession = {
+  expiresAt: number;
+};
+
+type LoginAttemptWindow = {
+  startedAt: number;
+  count: number;
+};
+
+// Sessions are intentionally kept on the server. The browser receives only an
+// opaque, HTTP-only session cookie and never receives the admin secret.
+const adminSessions = new Map<string, AdminSession>();
+const loginAttempts = new Map<string, LoginAttemptWindow>();
+
+function readCookie(req: Request, name: string): string | null {
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader) return null;
+
+  for (const cookie of cookieHeader.split(";")) {
+    const separatorIndex = cookie.indexOf("=");
+    if (separatorIndex === -1) continue;
+
+    const cookieName = cookie.slice(0, separatorIndex).trim();
+    if (cookieName !== name) continue;
+
+    const cookieValue = cookie.slice(separatorIndex + 1).trim();
+    try {
+      return decodeURIComponent(cookieValue);
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+function setAdminSessionCookie(res: Response, sessionId: string): void {
+  const attributes = [
+    `${ADMIN_SESSION_COOKIE}=${encodeURIComponent(sessionId)}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    `Max-Age=${Math.floor(ADMIN_SESSION_TTL_MS / 1000)}`,
+  ];
+
+  if (process.env.NODE_ENV === "production") {
+    attributes.push("Secure");
+  }
+
+  res.setHeader("Set-Cookie", attributes.join("; "));
+}
+
+function clearAdminSessionCookie(res: Response): void {
+  res.setHeader(
+    "Set-Cookie",
+    `${ADMIN_SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${
+      process.env.NODE_ENV === "production" ? "; Secure" : ""
+    }`,
+  );
+}
+
+function getValidAdminSessionId(req: Request): string | null {
+  const sessionId = readCookie(req, ADMIN_SESSION_COOKIE);
+  if (!sessionId) return null;
+
+  const session = adminSessions.get(sessionId);
+  if (!session) return null;
+
+  if (session.expiresAt <= Date.now()) {
+    adminSessions.delete(sessionId);
+    return null;
+  }
+
+  return sessionId;
+}
+
+function requireAdminSession(req: Request, res: Response, next: NextFunction): void {
+  if (!getValidAdminSessionId(req)) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+
+  next();
+}
+
+function secretsMatch(submittedSecret: string, configuredSecret: string): boolean {
+  // Hashing both values gives timingSafeEqual buffers the same length while
+  // avoiding a direct, timing-sensitive string comparison.
+  const submittedDigest = createHash("sha256").update(submittedSecret, "utf8").digest();
+  const configuredDigest = createHash("sha256").update(configuredSecret, "utf8").digest();
+  return timingSafeEqual(submittedDigest, configuredDigest);
+}
+
+function canAttemptLogin(clientIp: string): boolean {
+  const now = Date.now();
+  const currentWindow = loginAttempts.get(clientIp);
+
+  if (!currentWindow || now - currentWindow.startedAt >= LOGIN_RATE_LIMIT_WINDOW_MS) {
+    loginAttempts.set(clientIp, { startedAt: now, count: 1 });
+    return true;
+  }
+
+  if (currentWindow.count >= LOGIN_RATE_LIMIT_MAX_ATTEMPTS) {
+    return false;
+  }
+
+  currentWindow.count += 1;
+  return true;
+}
+
+function getClientIp(req: Request): string {
+  return req.ip || req.socket.remoteAddress || "unknown";
+}
+
 
 // MongoDB Schema
 const proposalSchema = new mongoose.Schema({
@@ -43,6 +164,15 @@ const Subscriber = mongoose.model("Subscriber", subscriberSchema);
 async function startServer() {
   const app = express();
   const PORT = 3000;
+  const adminSecret = process.env.ADMIN_SECRET;
+
+  if (!adminSecret && process.env.NODE_ENV === "production") {
+    throw new Error("ADMIN_SECRET must be configured before starting in production.");
+  }
+
+  if (!adminSecret) {
+    console.warn("ADMIN_SECRET is not configured. Admin login is disabled.");
+  }
 
   app.use(express.json());
 
@@ -74,6 +204,52 @@ async function startServer() {
   // API Routes
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  app.post("/api/admin/login", (req, res) => {
+    const { secret } = req.body ?? {};
+
+    if (typeof secret !== "string" || secret.length === 0) {
+      return res.status(400).json({ error: "A secret is required" });
+    }
+
+    if (!adminSecret) {
+      return res.status(503).json({ error: "Authentication is unavailable" });
+    }
+
+    if (!canAttemptLogin(getClientIp(req))) {
+      return res.status(429).json({ error: "Too many login attempts" });
+    }
+
+    if (!secretsMatch(secret, adminSecret)) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const previousSessionId = getValidAdminSessionId(req);
+    if (previousSessionId) {
+      adminSessions.delete(previousSessionId);
+    }
+
+    const sessionId = randomBytes(32).toString("hex");
+    adminSessions.set(sessionId, { expiresAt: Date.now() + ADMIN_SESSION_TTL_MS });
+    loginAttempts.delete(getClientIp(req));
+    setAdminSessionCookie(res, sessionId);
+
+    return res.status(200).json({ authenticated: true });
+  });
+
+  app.get("/api/admin/session", (req, res) => {
+    res.status(200).json({ authenticated: Boolean(getValidAdminSessionId(req)) });
+  });
+
+  app.post("/api/admin/logout", (req, res) => {
+    const sessionId = readCookie(req, ADMIN_SESSION_COOKIE);
+    if (sessionId) {
+      adminSessions.delete(sessionId);
+    }
+
+    clearAdminSessionCookie(res);
+    return res.status(200).json({ authenticated: false });
   });
 
   // Save a newsletter subscriber
@@ -245,6 +421,15 @@ async function startServer() {
       console.error("Error processing proposal:", error);
       res.status(500).json({ error: "Failed to process proposal" });
     }
+  });
+
+  // Keep malformed JSON responses generic instead of exposing parser details.
+  app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
+    if (req.path.startsWith("/api/") && error instanceof SyntaxError) {
+      return res.status(400).json({ error: "Malformed request" });
+    }
+
+    next(error);
   });
 
   // Vite middleware for development
