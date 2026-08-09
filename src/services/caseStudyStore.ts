@@ -192,7 +192,9 @@ function mergeLegacyDefaults(studies: CaseStudyRecord[]): CaseStudyRecord[] {
   return [...merged, ...remaining];
 }
 
-export function getStoredCaseStudies(): CaseStudyRecord[] {
+export function getStoredCaseStudies(options: { persist?: boolean } = {}): CaseStudyRecord[] {
+  const persist = options.persist !== false;
+
   try {
     const saved = localStorage.getItem(CASE_STUDY_STORAGE_KEY);
     if (!saved) {
@@ -207,11 +209,13 @@ export function getStoredCaseStudies(): CaseStudyRecord[] {
     // public studies once, then keep later edits/deletions authoritative.
     if (!migrationComplete) {
       normalized = mergeLegacyDefaults(normalized);
-      localStorage.setItem(CASE_STUDY_MIGRATION_KEY, "true");
+      if (persist) {
+        localStorage.setItem(CASE_STUDY_MIGRATION_KEY, "true");
+      }
     }
 
     const normalizedJson = JSON.stringify(normalized);
-    if (normalizedJson !== saved) {
+    if (persist && normalizedJson !== saved) {
       localStorage.setItem(CASE_STUDY_STORAGE_KEY, normalizedJson);
     }
 

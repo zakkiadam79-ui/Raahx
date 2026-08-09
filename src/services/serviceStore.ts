@@ -51,7 +51,9 @@ export function normalizeServices(value: unknown): ServiceData[] {
   return value.length > 0 && normalized.length === 0 ? [...servicesData] : normalized;
 }
 
-export function getStoredServices(): ServiceData[] {
+export function getStoredServices(options: { persist?: boolean } = {}): ServiceData[] {
+  const persist = options.persist !== false;
+
   try {
     const saved = localStorage.getItem(SERVICE_STORAGE_KEY);
     if (!saved) {
@@ -64,7 +66,7 @@ export function getStoredServices(): ServiceData[] {
 
     // This migrates legacy records such as icon: {} without touching unrelated
     // localStorage keys or removing any other service fields.
-    if (normalizedJson !== saved) {
+    if (persist && normalizedJson !== saved) {
       localStorage.setItem(SERVICE_STORAGE_KEY, normalizedJson);
     }
 

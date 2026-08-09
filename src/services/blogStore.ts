@@ -187,7 +187,9 @@ function mergeLegacyDefaults(posts: BlogPost[]): BlogPost[] {
   return [...merged, ...remaining];
 }
 
-export function getStoredPosts(): BlogPost[] {
+export function getStoredPosts(options: { persist?: boolean } = {}): BlogPost[] {
+  const persist = options.persist !== false;
+
   try {
     const saved = localStorage.getItem(BLOG_STORAGE_KEY);
     if (!saved) {
@@ -202,11 +204,13 @@ export function getStoredPosts(): BlogPost[] {
     // missing original articles once so existing public URLs/content remain available.
     if (!migrationComplete) {
       normalized = mergeLegacyDefaults(normalized);
-      localStorage.setItem(BLOG_MIGRATION_KEY, "true");
+      if (persist) {
+        localStorage.setItem(BLOG_MIGRATION_KEY, "true");
+      }
     }
 
     const normalizedJson = JSON.stringify(normalized);
-    if (normalizedJson !== saved) {
+    if (persist && normalizedJson !== saved) {
       localStorage.setItem(BLOG_STORAGE_KEY, normalizedJson);
     }
 

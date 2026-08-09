@@ -92,7 +92,9 @@ function mergeLegacyDefaults(members: TeamMember[]): TeamMember[] {
   return [...merged, ...remaining];
 }
 
-export function getStoredTeamMembers(): TeamMember[] {
+export function getStoredTeamMembers(options: { persist?: boolean } = {}): TeamMember[] {
+  const persist = options.persist !== false;
+
   try {
     const saved = localStorage.getItem(TEAM_STORAGE_KEY);
     if (!saved) {
@@ -107,11 +109,13 @@ export function getStoredTeamMembers(): TeamMember[] {
     // original public team once so those existing members are not lost.
     if (!migrationComplete) {
       normalized = mergeLegacyDefaults(normalized);
-      localStorage.setItem(TEAM_MIGRATION_KEY, "true");
+      if (persist) {
+        localStorage.setItem(TEAM_MIGRATION_KEY, "true");
+      }
     }
 
     const normalizedJson = JSON.stringify(normalized);
-    if (normalizedJson !== saved) {
+    if (persist && normalizedJson !== saved) {
       localStorage.setItem(TEAM_STORAGE_KEY, normalizedJson);
     }
 

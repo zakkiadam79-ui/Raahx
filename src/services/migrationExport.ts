@@ -43,10 +43,12 @@ function deterministicServiceId(service: ServiceData): string {
 }
 
 function toMigrationPayload(): MigrationPayload {
-  const services = getStoredServices();
-  const team = getStoredTeamMembers();
-  const blogs = getStoredPosts();
-  const caseStudies = getStoredCaseStudies();
+  // Read-only mode prevents the export from writing normalization markers or
+  // changing the browser's existing content while preparing the backup.
+  const services = getStoredServices({ persist: false });
+  const team = getStoredTeamMembers({ persist: false });
+  const blogs = getStoredPosts({ persist: false });
+  const caseStudies = getStoredCaseStudies({ persist: false });
 
   return {
     migration_version: MIGRATION_VERSION,
