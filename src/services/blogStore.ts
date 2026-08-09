@@ -1,4 +1,5 @@
 import { blogsData, type BlogPost as StaticBlogPost } from "../data/blogsData";
+import { isServiceApiConfigured, serviceApiUrl } from "./serviceStore";
 
 export type BlogContentBlockType = "paragraph" | "heading" | "quote" | "list";
 
@@ -237,3 +238,158 @@ export function savePosts(posts: BlogPost[]): BlogPost[] {
 export function getBlogBySlug(posts: BlogPost[], slug: string): BlogPost | undefined {
   return posts.find((post) => post.slug === slug || post.legacySlugs?.includes(slug));
 }
+
+export class BlogApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "BlogApiError";
+  }
+}
+
+function formatApiDate(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return "";
+  if (/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/.test(value.trim())) return value.trim();
+
+  const date = new Date(value.includes("T") ? value : `${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return value.trim();
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
+function toApiDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toISOString().slice(0, 10);
+}
+
+function blogApiErrorMessage(error: unknown): string {
+  if (error instanceof BlogApiError) {
+    if (error.status === 401 || error.status === 403) return "The PHP API session is not authenticated. Sign in again before changing Blog data.";
+    return error.message;
+  }
+  return "The Blog API is unavailable.";
+}
+
+async function blogApiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(serviceApiUrl(path), {
+      ...init,
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        ...(init.body ? { "Content-Type": "application/json" } : {}),
+        ...init.headers,
+      },
+    });
+  } catch {
+    throw new BlogApiError(0, "NETWORK_ERROR", "The Blog API could not be reached.");
+  }
+
+  const payload = await response.json().catch(() => null) as {
+    success?: boolean;
+    data?: T;
+    error?: { code?: string; message?: string };
+  } | null;
+
+  if (!response.ok || !payload?.success) {
+    throw new BlogApiError(
+      response.status,
+      payload?.error?.code ?? "API_ERROR",
+      payload?.error?.message ?? "The Blog API returned an error.",
+    );
+  }
+
+  return payload.data as T;
+}
+
+function apiBlogToRecord(value: unknown): BlogPost | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const raw = value as Record<string, unknown>;
+  const mapped = {
+    ...raw,
+    id: raw.id,
+    title: raw.title,
+    slug: raw.slug,
+    serviceSlug: raw.service_slug ?? raw.serviceSlug ?? "",
+    author: raw.author,
+    date: formatApiDate(raw.published_at ?? raw.date),
+    readTime: raw.read_time ?? raw.readTime ?? "5 min read",
+    excerpt: raw.excerpt,
+    image: raw.custom_image_url ?? raw.image ?? undefined,
+    legacySlugs: raw.legacy_slugs ?? raw.legacySlugs ?? [],
+    content: raw.content ?? raw.content_blocks ?? [],
+  };
+  return normalizeBlogPosts([mapped])[0] ?? null;
+}
+
+function blogRecordToApiPayload(post: BlogPost, displayOrder?: number): Record<string, unknown> {
+  return {
+    ...(post.id ? { id: post.id } : {}),
+    title: post.title,
+    slug: post.slug,
+    service_slug: post.serviceSlug,
+    author: post.author,
+    published_at: toApiDate(post.date),
+    read_time: post.readTime,
+    excerpt: post.excerpt,
+    custom_image_url: post.image || null,
+    display_order: displayOrder ?? (typeof post.display_order === "number" ? post.display_order : 0),
+    content: post.content.map((block, index) => ({ ...block, display_order: index })),
+    legacy_slugs: post.legacySlugs ?? [],
+  };
+}
+
+export async function fetchBlogsFromApi(): Promise<BlogPost[]> {
+  const data = await blogApiRequest<unknown[]>("/blogs");
+  if (!Array.isArray(data)) {
+    throw new BlogApiError(502, "INVALID_API_RESPONSE", "The Blog API returned invalid data.");
+  }
+
+  return normalizeBlogPosts(data.map(apiBlogToRecord).filter((post): post is BlogPost => post !== null));
+}
+
+export async function fetchBlogByIdFromApi(id: string): Promise<BlogPost> {
+  const data = await blogApiRequest<unknown>(`/blogs/${encodeURIComponent(id)}`);
+  const post = apiBlogToRecord(data);
+  if (!post) throw new BlogApiError(502, "INVALID_API_RESPONSE", "The Blog API returned an invalid blog.");
+  return post;
+}
+
+export async function fetchBlogBySlugFromApi(slug: string): Promise<BlogPost> {
+  const data = await blogApiRequest<unknown>(`/blogs/slug/${encodeURIComponent(slug)}`);
+  const post = apiBlogToRecord(data);
+  if (!post) throw new BlogApiError(502, "INVALID_API_RESPONSE", "The Blog API returned an invalid blog.");
+  return post;
+}
+
+export async function createBlogViaApi(post: BlogPost, displayOrder?: number): Promise<BlogPost> {
+  const data = await blogApiRequest<unknown>("/blogs", {
+    method: "POST",
+    body: JSON.stringify(blogRecordToApiPayload(post, displayOrder)),
+  });
+  const created = apiBlogToRecord(data);
+  if (!created) throw new BlogApiError(502, "INVALID_API_RESPONSE", "The Blog API returned an invalid blog.");
+  return created;
+}
+
+export async function updateBlogViaApi(id: string, post: BlogPost, displayOrder?: number): Promise<BlogPost> {
+  const data = await blogApiRequest<unknown>(`/blogs/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    body: JSON.stringify(blogRecordToApiPayload({ ...post, id }, displayOrder)),
+  });
+  const updated = apiBlogToRecord(data);
+  if (!updated) throw new BlogApiError(502, "INVALID_API_RESPONSE", "The Blog API returned an invalid blog.");
+  return updated;
+}
+
+export async function deleteBlogViaApi(id: string): Promise<void> {
+  await blogApiRequest<{ deleted: boolean }>(`/blogs/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+export { blogApiErrorMessage, isServiceApiConfigured as isBlogApiConfigured };

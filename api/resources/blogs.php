@@ -203,8 +203,8 @@ function api_blogs_payload(PDO $pdo, array $input, ?array $existing = null): arr
     api_blogs_assert_service_exists($pdo, $serviceSlug ?? '');
 
     $customImage = array_key_exists('custom_image_url', $source)
-        ? Validation::url($source, 'custom_image_url')
-        : Validation::url(['custom_image_url' => $source['image'] ?? null], 'custom_image_url');
+        ? Validation::url($source, 'custom_image_url', true)
+        : Validation::url(['custom_image_url' => $source['image'] ?? null], 'custom_image_url', true);
     $content = $source['content'] ?? ($source['content_blocks'] ?? []);
 
     return [

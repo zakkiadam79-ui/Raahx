@@ -3,7 +3,12 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Search, Mail, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { getInitials } from "../data/blogsData";
 import { getStoredServices } from "../services/serviceStore";
-import { getStoredPosts, type BlogPost } from "../services/blogStore";
+import {
+  fetchBlogsFromApi,
+  getStoredPosts,
+  isBlogApiConfigured,
+  type BlogPost,
+} from "../services/blogStore";
 import type { ServiceData } from "../data/servicesData";
 import { getServiceIcon } from "../utils/getServiceIcon";
 
@@ -68,8 +73,30 @@ export default function BlogIndex() {
   const [services, setServices] = useState<ServiceData[]>(() => getStoredServices());
 
   useEffect(() => {
-    setPosts(getStoredPosts());
+    let isMounted = true;
+    const fallbackPosts = getStoredPosts();
+    setPosts(fallbackPosts);
     setServices(getStoredServices());
+
+    if (!isBlogApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    fetchBlogsFromApi()
+      .then((remotePosts) => {
+        if (isMounted && (remotePosts.length > 0 || fallbackPosts.length === 0)) {
+          setPosts(remotePosts);
+        }
+      })
+      .catch((error) => {
+        console.warn("Blog API unavailable; using the local Blog fallback.", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleSubscribe = async (e: React.FormEvent) => {

@@ -3,7 +3,14 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Calendar, Clock } from "lucide-react";
 import { getInitials } from "../data/blogsData";
 import { getStoredServices } from "../services/serviceStore";
-import { getBlogBySlug, getStoredPosts, type BlogPost } from "../services/blogStore";
+import {
+  fetchBlogBySlugFromApi,
+  fetchBlogsFromApi,
+  getBlogBySlug,
+  getStoredPosts,
+  isBlogApiConfigured,
+  type BlogPost,
+} from "../services/blogStore";
 import type { ServiceData } from "../data/servicesData";
 import { getServiceIcon } from "../utils/getServiceIcon";
 
@@ -57,19 +64,51 @@ export default function BlogDetail() {
   const { slug } = useParams();
   const [posts, setPosts] = useState<BlogPost[]>(() => getStoredPosts());
   const [services, setServices] = useState<ServiceData[]>(() => getStoredServices());
+  const [remotePost, setRemotePost] = useState<BlogPost | null>(null);
 
   useEffect(() => {
-    setPosts(getStoredPosts());
+    let isMounted = true;
+    const fallbackPosts = getStoredPosts();
+    setPosts(fallbackPosts);
     setServices(getStoredServices());
+    setRemotePost(null);
+
+    if (slug && isBlogApiConfigured()) {
+      fetchBlogBySlugFromApi(slug)
+        .then((remote) => {
+          if (isMounted) setRemotePost(remote);
+        })
+        .catch((error) => {
+          console.warn("Blog detail API unavailable; using the local Blog fallback.", error);
+        });
+
+      fetchBlogsFromApi()
+        .then((remotePosts) => {
+          if (isMounted && (remotePosts.length > 0 || fallbackPosts.length === 0)) {
+            setPosts(remotePosts);
+          }
+        })
+        .catch(() => {
+          // The individual blog request above still provides the detail fallback.
+        });
+    }
 
     if (slug) {
       fetch(`/api/blog-views/${slug}`, { method: "POST" }).catch(() => {
         /* fail silently */
       });
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [slug]);
 
-  const post = slug ? getBlogBySlug(posts, slug) : undefined;
+  const post = (remotePost && slug && (remotePost.slug === slug || remotePost.legacySlugs?.includes(slug)))
+    ? remotePost
+    : slug
+    ? getBlogBySlug(posts, slug)
+    : undefined;
 
   if (!post) {
     return (

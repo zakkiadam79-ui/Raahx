@@ -3,12 +3,19 @@ import { Edit3, Plus, Save, Trash2, X } from "lucide-react";
 import { getStoredServices } from "../services/serviceStore";
 import type { ServiceData } from "../data/servicesData";
 import {
+  blogApiErrorMessage,
+  createBlogViaApi,
+  deleteBlogViaApi,
+  fetchBlogsFromApi,
   getStoredPosts,
+  isBlogApiConfigured,
   normalizeBlogSlug,
   savePosts,
+  BlogApiError,
   type BlogContentBlock,
   type BlogContentBlockType,
   type BlogPost,
+  updateBlogViaApi,
 } from "../services/blogStore";
 
 const fieldClassName =
@@ -61,10 +68,35 @@ export default function AdminBlog() {
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [imagePreviewFailed, setImagePreviewFailed] = useState(false);
   const [formError, setFormError] = useState("");
+  const [apiError, setApiError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setPosts(getStoredPosts());
+    let isMounted = true;
+    const fallbackPosts = getStoredPosts();
+    setPosts(fallbackPosts);
     setServices(getStoredServices());
+
+    if (!isBlogApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    fetchBlogsFromApi()
+      .then((remotePosts) => {
+        if (isMounted && (remotePosts.length > 0 || fallbackPosts.length === 0)) {
+          setPosts(remotePosts);
+        }
+      })
+      .catch((error) => {
+        if (isMounted) setApiError(blogApiErrorMessage(error));
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const updateEditingPost = (changes: Partial<BlogPost>) => {
@@ -120,7 +152,7 @@ export default function AdminBlog() {
     updateContentBlock(index, nextBlock);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingPost) return;
 
@@ -189,23 +221,71 @@ export default function AdminBlog() {
       legacySlugs: previousSlugs,
     };
 
-    const updated = posts.some((post) => post.id === editingPost.id)
+    const existingPost = posts.find((post) => post.id === editingPost.id);
+    const updated = existingPost
       ? posts.map((post) => (post.id === editingPost.id ? postToSave : post))
       : [postToSave, ...posts];
 
-    setPosts(savePosts(updated));
-    setEditingPost(null);
-    setSlugManuallyEdited(false);
-    setFormError("");
+    setApiError("");
+    setSuccessMessage("");
+    setIsSaving(true);
+
+    try {
+      if (isBlogApiConfigured()) {
+        if (existingPost) {
+          if (!existingPost.id) {
+            throw new BlogApiError(400, "MISSING_BLOG_ID", "This blog has no API ID. Reload the Blog list before editing it.");
+          }
+          const updatedPost = await updateBlogViaApi(existingPost.id, postToSave, existingPost.display_order as number | undefined);
+          setPosts((current) => current.map((post) => post.id === existingPost.id ? updatedPost : post));
+          setSuccessMessage("Blog updated in the PHP API and MySQL.");
+        } else {
+          const createdPost = await createBlogViaApi(postToSave, posts.length);
+          setPosts((current) => [createdPost, ...current]);
+          setSuccessMessage("Blog created in the PHP API and MySQL.");
+        }
+      } else {
+        setPosts(savePosts(updated));
+        setSuccessMessage("Blog saved to the local fallback. Configure VITE_API_BASE_URL to use MySQL.");
+      }
+
+      setEditingPost(null);
+      setSlugManuallyEdited(false);
+      setFormError("");
+    } catch (error) {
+      setApiError(blogApiErrorMessage(error));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDelete = (post: BlogPost) => {
+  const handleDelete = async (post: BlogPost) => {
     if (!confirm(`Delete “${post.title}”?\n\nThis action cannot be undone.`)) return;
-    setPosts(savePosts(posts.filter((item) => item.id !== post.id)));
 
-    if (editingPost?.id === post.id) {
-      setEditingPost(null);
-      setFormError("");
+    setApiError("");
+    setSuccessMessage("");
+    setIsSaving(true);
+    try {
+      if (isBlogApiConfigured()) {
+        if (!post.id) {
+          throw new BlogApiError(400, "MISSING_BLOG_ID", "This blog has no API ID. Reload the Blog list before deleting it.");
+        }
+        await deleteBlogViaApi(post.id);
+        setPosts((current) => current.filter((item) => item.id !== post.id));
+        setSuccessMessage("Blog deleted from the PHP API and MySQL.");
+      } else {
+        setPosts(savePosts(posts.filter((item) => item.id !== post.id)));
+        setSuccessMessage("Blog deleted from the local fallback. Configure VITE_API_BASE_URL to use MySQL.");
+      }
+
+      if (editingPost?.id === post.id) {
+        setEditingPost(null);
+        setFormError("");
+      }
+    } catch (error) {
+      setApiError(blogApiErrorMessage(error));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -226,6 +306,17 @@ export default function AdminBlog() {
           <Plus size={18} /> Create Post
         </button>
       </div>
+
+      {apiError && (
+        <p role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {apiError}
+        </p>
+      )}
+      {successMessage && (
+        <p role="status" className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+          {successMessage}
+        </p>
+      )}
 
       {editingPost && (
         <form onSubmit={handleSave} className="mb-12 space-y-6 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
@@ -501,9 +592,10 @@ export default function AdminBlog() {
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary/40"
+              disabled={isSaving}
+              className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Save size={16} /> Save Article
+              <Save size={16} /> {isSaving ? "Saving..." : "Save Article"}
             </button>
           </div>
         </form>

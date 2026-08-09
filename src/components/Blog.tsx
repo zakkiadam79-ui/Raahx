@@ -3,7 +3,12 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { getInitials } from "../data/blogsData";
 import { getStoredServices } from "../services/serviceStore";
-import { getStoredPosts, type BlogPost } from "../services/blogStore";
+import {
+  fetchBlogsFromApi,
+  getStoredPosts,
+  isBlogApiConfigured,
+  type BlogPost,
+} from "../services/blogStore";
 import { getServiceIcon } from "../utils/getServiceIcon";
 import type { ServiceData } from "../data/servicesData";
 
@@ -54,8 +59,34 @@ function CoverArt({
 }
 
 export default function Blog() {
-  const [posts] = useState<BlogPost[]>(() => getStoredPosts());
+  const [posts, setPosts] = useState<BlogPost[]>(() => getStoredPosts());
   const [services] = useState<ServiceData[]>(() => getStoredServices());
+
+  useEffect(() => {
+    let isMounted = true;
+    const fallbackPosts = getStoredPosts();
+
+    if (!isBlogApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    fetchBlogsFromApi()
+      .then((remotePosts) => {
+        if (isMounted && (remotePosts.length > 0 || fallbackPosts.length === 0)) {
+          setPosts(remotePosts);
+        }
+      })
+      .catch((error) => {
+        console.warn("Blog API unavailable; using the local Blog fallback.", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const [featured, ...rest] = posts;
   const secondary = rest.slice(0, 2);
 
