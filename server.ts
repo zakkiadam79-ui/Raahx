@@ -194,9 +194,26 @@ async function startServer() {
   // bundled into the React/Vite client or returned by an API response.
   const smtpHost = process.env.SMTP_HOST || "smtp.hostinger.com";
   const smtpPort = Number.parseInt(process.env.SMTP_PORT || "465", 10);
-  const smtpSecure = process.env.SMTP_SECURE === undefined
+  const configuredSecureValue = process.env.SMTP_SECURE?.trim().toLowerCase();
+  const requestedSecure = configuredSecureValue === undefined
+    ? undefined
+    : /^(true|1|yes)$/i.test(configuredSecureValue)
     ? true
-    : /^(true|1|yes)$/i.test(process.env.SMTP_SECURE);
+    : /^(false|0|no)$/i.test(configuredSecureValue)
+    ? false
+    : undefined;
+  // Port 465 is implicit TLS; port 587 is plaintext until STARTTLS.
+  // Enforce the matching mode so an accidental env mismatch cannot cause
+  // Nodemailer's SSL "wrong version number" error.
+  const smtpSecure = smtpPort === 465
+    ? true
+    : smtpPort === 587
+    ? false
+    : requestedSecure ?? true;
+
+  if (requestedSecure !== undefined && requestedSecure !== smtpSecure) {
+    console.warn(`SMTP_SECURE does not match SMTP_PORT ${smtpPort}; using secure=${smtpSecure}.`);
+  }
   const smtpUser = process.env.SMTP_USER || "hello@raahx.com";
   const mailFrom = process.env.MAIL_FROM || "hello@raahx.com";
   const mailTo = process.env.MAIL_TO || "hello@raahx.com";
