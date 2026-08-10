@@ -33,6 +33,17 @@ final class Validation
         return $value === '' ? null : $value;
     }
 
+    public static function email(array $data, string $key = 'email', bool $required = true): ?string
+    {
+        $value = self::string($data, $key, $required, 254);
+        if ($value === null) return null;
+        if (preg_match('/[\\r\\n]/', $value) || filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
+            throw new ApiException(400, 'VALIDATION_ERROR', sprintf('%s must be a valid email address.', $key));
+        }
+
+        return strtolower($value);
+    }
+
     public static function slug(string $value, string $field = 'slug'): string
     {
         $value = strtolower(trim($value));

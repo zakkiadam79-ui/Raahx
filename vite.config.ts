@@ -12,10 +12,10 @@ export default defineConfig(() => {
       },
     },
     server: {
-      // Proxy API calls to backend Express server
+      // Proxy API calls to the local PHP server during development.
       proxy: {
         '/api': {
-          target: 'http://localhost:5000',
+          target: 'http://localhost:8000',
           changeOrigin: true,
           secure: false,
         },

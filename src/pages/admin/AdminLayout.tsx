@@ -26,37 +26,28 @@ export default function AdminLayout() {
 
     const checkSession = async () => {
       try {
-        const response = await fetch("/api/admin/session", {
-          method: "GET",
-          credentials: "include",
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error("Session check failed");
-        }
-
-        const data = (await response.json()) as { authenticated?: boolean };
-        if (data.authenticated !== true) {
+        if (!isServiceApiConfigured()) {
           setAuthState("unauthenticated");
           return;
         }
 
-        if (isServiceApiConfigured()) {
-          const phpResponse = await fetch(serviceApiUrl("/auth/session"), {
-            method: "GET",
-            credentials: "include",
-            signal: controller.signal,
-          });
-          const phpData = await phpResponse.json().catch(() => null) as {
-            success?: boolean;
-            data?: { authenticated?: boolean };
-          } | null;
+        const response = await fetch(serviceApiUrl("/auth/session"), {
+          method: "GET",
+          credentials: "include",
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => null) as {
+          success?: boolean;
+          data?: { authenticated?: boolean };
+        } | null;
 
-          if (phpResponse.status === 401 || phpData?.data?.authenticated === false) {
-            setAuthState("unauthenticated");
-            return;
-          }
+        if (
+          !response.ok
+          || payload?.success !== true
+          || payload.data?.authenticated !== true
+        ) {
+          setAuthState("unauthenticated");
+          return;
         }
 
         setAuthState("authenticated");
@@ -74,10 +65,6 @@ export default function AdminLayout() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/admin/logout", {
-        method: "POST",
-        credentials: "include",
-      });
       if (isServiceApiConfigured()) {
         await fetch(serviceApiUrl("/auth/logout"), {
           method: "POST",

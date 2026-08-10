@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Calendar, Clock } from "lucide-react";
 import { getInitials } from "../data/blogsData";
-import { getStoredServices } from "../services/serviceStore";
+import { getStoredServices, serviceApiUrl } from "../services/serviceStore";
 import {
   fetchBlogBySlugFromApi,
   fetchBlogsFromApi,
@@ -94,7 +94,10 @@ export default function BlogDetail() {
     }
 
     if (slug) {
-      fetch(`/api/blog-views/${slug}`, { method: "POST" }).catch(() => {
+      fetch(serviceApiUrl(`/blog-views/${encodeURIComponent(slug)}`), {
+        method: "POST",
+        credentials: "include",
+      }).catch(() => {
         /* fail silently */
       });
     }

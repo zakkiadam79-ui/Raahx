@@ -1,7 +1,7 @@
 -- RaahX Step 5A: MySQL CMS schema
 --
--- This migration creates tables only. It does not insert production data and it
--- does not alter the current React/localStorage data flow.
+-- This migration creates tables only. It does not insert production data.
+-- The React frontend uses these tables through the PHP API when configured.
 --
 -- Select the database supplied by the deployment environment before running:
 --   CREATE DATABASE IF NOT EXISTS `raahx` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -262,11 +262,76 @@ CREATE TABLE IF NOT EXISTS case_study_legacy_slugs (
   COLLATE utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------------
+-- NEWSLETTER SUBSCRIBERS
+-- ---------------------------------------------------------------------------
+-- Public newsletter subscriptions are stored by the PHP API. The unique email
+-- key makes duplicate submissions safe and idempotent.
+
+CREATE TABLE IF NOT EXISTS subscribers (
+  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  email           VARCHAR(254) NOT NULL,
+  subscribed_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_subscribers_email (email),
+  KEY idx_subscribers_subscribed_at (subscribed_at)
+) ENGINE=InnoDB
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- PROPOSALS / INQUIRIES
+-- ---------------------------------------------------------------------------
+-- These columns mirror the fields submitted by the existing React proposal
+-- form. The PHP API stores the record before sending the existing notification
+-- and visitor-confirmation emails through the configured SMTP server.
+
+CREATE TABLE IF NOT EXISTS proposals (
+  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  full_name       VARCHAR(255) NOT NULL,
+  company_name    VARCHAR(255) NOT NULL,
+  business_email  VARCHAR(254) NOT NULL,
+  phone           VARCHAR(100) NOT NULL,
+  website         VARCHAR(2048) NULL,
+  industry        VARCHAR(255) NOT NULL,
+  services        VARCHAR(255) NOT NULL,
+  budget          VARCHAR(255) NOT NULL,
+  timeline        VARCHAR(255) NOT NULL,
+  project_details LONGTEXT NOT NULL,
+  submission_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_proposals_business_email (business_email),
+  KEY idx_proposals_submission_date (submission_date)
+) ENGINE=InnoDB
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- BLOG VIEW COUNTS
+-- ---------------------------------------------------------------------------
+-- View counts are keyed by slug. Keeping the slug as the primary key preserves
+-- the existing public API behavior without requiring a foreign key, so
+-- legacy/static blog slugs remain countable.
+
+CREATE TABLE IF NOT EXISTS blog_views (
+  slug            VARCHAR(191) NOT NULL,
+  views           BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (slug),
+  KEY idx_blog_views_views (views)
+) ENGINE=InnoDB
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
 -- ADMIN SESSIONS
 -- ---------------------------------------------------------------------------
--- The current React/Express authentication remains unchanged in Step 5A.
--- This optional table is ready for a future PHP API session implementation.
--- Store only a SHA-256 hash of an opaque session token, never ADMIN_SECRET.
+-- The PHP API authentication stores only a SHA-256 hash of an opaque session
+-- token, never ADMIN_SECRET.
 
 CREATE TABLE IF NOT EXISTS admin_sessions (
   session_token_hash  CHAR(64) NOT NULL,

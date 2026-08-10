@@ -1,8 +1,8 @@
 # RaahX PHP API Foundation
 
-This directory is the Step 5B PHP REST API foundation for the MySQL schema in `database/schema.sql`.
+This directory contains the PHP REST API for the MySQL schema in `database/schema.sql`.
 
-The React frontend is intentionally **not connected** to this API yet. The existing localStorage/static data flow remains active until the later migration step.
+The production React frontend uses this API for application data, newsletter subscriptions, proposals, blog view counts, and PHP authentication. The existing localStorage/static data flow remains available as a deliberate fallback if an API read is unavailable. `VITE_API_BASE_URL` is only needed when the PHP API is hosted on a separate origin; same-origin deployments use `/api`.
 
 ## Configuration
 
@@ -22,9 +22,17 @@ Supported environment variables include:
 - `RAAHX_DB_USER`
 - `RAAHX_DB_PASSWORD`
 - `RAAHX_ALLOWED_ORIGINS`
-- `ADMIN_SECRET`
 - `RAAHX_SESSION_COOKIE`
 - `RAAHX_SESSION_TTL`
+- `ADMIN_SECRET`
+- `APP_URL`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_SECURE`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `MAIL_FROM`
+- `MAIL_TO`
 
 ## Routing
 
@@ -42,6 +50,18 @@ Public reads:
 - `GET /api/case-studies`
 - `GET /api/case-studies/{id}`
 - `GET /api/case-studies/slug/{slug}`
+- `GET /api/blog-views/popular?limit=3`
+
+Public writes:
+
+- `POST /api/subscribers`
+- `POST /api/proposals`
+- `POST /api/blog-views/{slug}`
+
+Authenticated reads/actions:
+
+- `GET /api/subscribers`
+- `POST /api/notify-subscribers`
 
 Authenticated writes:
 

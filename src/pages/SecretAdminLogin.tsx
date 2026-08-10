@@ -6,7 +6,9 @@ interface Props {
 }
 
 interface LoginResponse {
-  authenticated?: boolean;
+  success?: boolean;
+  data?: { authenticated?: boolean };
+  error?: { message?: string };
 }
 
 export default function SecretAdminLogin({ onLoginSuccess }: Props) {
@@ -20,21 +22,18 @@ export default function SecretAdminLogin({ onLoginSuccess }: Props) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/admin/login", {
+      if (!isServiceApiConfigured()) {
+        setError("The PHP API is not configured for this environment.");
+        return;
+      }
+
+      const response = await fetch(serviceApiUrl("/auth/login"), {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ secret: passcode }),
       });
-
-      let data: LoginResponse = {};
-      try {
-        data = (await response.json()) as LoginResponse;
-      } catch {
-        // Keep the client-side error generic if the server did not return JSON.
-      }
+      const data = await response.json().catch(() => null) as LoginResponse | null;
 
       if (response.status === 401) {
         setError("Incorrect passcode");
@@ -46,39 +45,14 @@ export default function SecretAdminLogin({ onLoginSuccess }: Props) {
         return;
       }
 
-      if (!response.ok || data.authenticated !== true) {
-        setError("Admin authentication is temporarily unavailable.");
+      if (!response.ok || data?.success !== true || data.data?.authenticated !== true) {
+        setError(data?.error?.message || "Admin authentication is temporarily unavailable.");
         return;
-      }
-
-      // When the PHP API is configured, establish its server-side session too.
-      // The existing Node session remains in place during this transition.
-      if (isServiceApiConfigured()) {
-        try {
-          const phpResponse = await fetch(serviceApiUrl("/auth/login"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ secret: passcode }),
-          });
-          const phpData = await phpResponse.json().catch(() => null) as {
-            success?: boolean;
-            data?: { authenticated?: boolean };
-          } | null;
-
-          if (!phpResponse.ok || phpData?.success !== true || phpData.data?.authenticated !== true) {
-            setError("The PHP API authentication session could not be established.");
-            return;
-          }
-        } catch {
-          setError("The PHP API is unavailable. Admin changes cannot be saved to MySQL yet.");
-          return;
-        }
       }
 
       onLoginSuccess();
     } catch {
-      setError("Unable to contact the authentication server.");
+      setError("Unable to contact the PHP authentication API.");
     } finally {
       setIsSubmitting(false);
     }

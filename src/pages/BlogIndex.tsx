@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Search, Mail, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { getInitials } from "../data/blogsData";
-import { getStoredServices } from "../services/serviceStore";
+import { getStoredServices, serviceApiUrl } from "../services/serviceStore";
 import {
   fetchBlogsFromApi,
   getStoredPosts,
@@ -118,27 +118,29 @@ export default function BlogIndex() {
     setSubscribeMessage("");
 
     try {
-      const res = await fetch("/api/subscribers", {
+      const res = await fetch(serviceApiUrl("/subscribers"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email }),
       });
       const payload = await res.json().catch(() => null) as {
-        message?: unknown;
-        error?: unknown;
+        success?: boolean;
+        data?: { message?: unknown };
+        error?: { message?: unknown };
       } | null;
 
-      if (!res.ok) {
+      if (!res.ok || payload?.success !== true) {
         throw new Error(
-          typeof payload?.error === "string"
-            ? payload.error
+          typeof payload?.error?.message === "string"
+            ? payload.error.message
             : "Newsletter subscription failed. Please try again later.",
         );
       }
 
       setSubscribeStatus("success");
       setSubscribeMessage(
-        typeof payload?.message === "string" ? payload.message : "Subscribed successfully.",
+        typeof payload.data?.message === "string" ? payload.data.message : "Subscribed successfully.",
       );
       setSubscribeEmail("");
       setTimeout(() => {
@@ -181,9 +183,16 @@ export default function BlogIndex() {
   }, [activeService, posts, query, services]);
 
   useEffect(() => {
-    fetch("/api/blog-views/popular?limit=3")
-      .then((res) => res.json())
-      .then((data) => setPopular(data.posts ?? []))
+    fetch(serviceApiUrl("/blog-views/popular?limit=3"))
+      .then(async (res) => {
+        const payload = await res.json().catch(() => null) as {
+          success?: boolean;
+          data?: { posts?: PopularEntry[] };
+        } | null;
+        if (!res.ok || payload?.success !== true) throw new Error("Popular posts unavailable");
+        return payload.data?.posts ?? [];
+      })
+      .then((postsFromApi) => setPopular(postsFromApi))
       .catch(() => setPopular([]));
   }, []);
 

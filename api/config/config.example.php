@@ -20,4 +20,15 @@ return [
         'cookie_name' => 'raahx_php_session',
         'ttl_seconds' => 28800,
     ],
+    'app_url' => 'https://replace-with-raahx-domain.example',
+    'mail' => [
+        'host' => 'smtp.hostinger.com',
+        'port' => 465,
+        'secure' => true,
+        'user' => 'hello@raahx.com',
+        // Set SMTP_PASS through the server environment, never in Git.
+        'pass' => null,
+        'from' => 'hello@raahx.com',
+        'to' => 'hello@raahx.com',
+    ],
 ];

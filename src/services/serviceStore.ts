@@ -114,7 +114,9 @@ function configuredServiceApiBaseUrl(): string | undefined {
 }
 
 export function isServiceApiConfigured(): boolean {
-  return Boolean(configuredServiceApiBaseUrl());
+  // The production API is same-origin by default. VITE_API_BASE_URL is only
+  // needed when the PHP API is hosted on a separate origin.
+  return true;
 }
 
 export function serviceApiUrl(path: string): string {

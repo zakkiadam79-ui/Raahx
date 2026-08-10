@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useSearchParams } from "react-router-dom";
 import { Loader2, CheckCircle2, ChevronDown, Check } from "lucide-react";
+import { serviceApiUrl } from "../services/serviceStore";
 import { cn } from "@/src/lib/utils";
 import logoImage from "../assets/images/logo.png";
 
@@ -59,14 +60,22 @@ export default function ProposalForm() {
     setError("");
 
     try {
-      const response = await fetch("/api/proposals", {
+      const response = await fetch(serviceApiUrl("/proposals"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data),
       });
+      const payload = await response.json().catch(() => null) as {
+        success?: boolean;
+        data?: { message?: string };
+        error?: { message?: string };
+      } | null;
 
-      if (!response.ok) {
-        throw new Error("Failed to submit proposal");
+      if (!response.ok || payload?.success !== true) {
+        throw new Error(
+          payload?.error?.message || "An error occurred while submitting your proposal. Please try again.",
+        );
       }
 
       setIsSuccess(true);
@@ -77,7 +86,7 @@ export default function ProposalForm() {
         setIsSuccess(false);
       }, 5000);
     } catch (err) {
-      setError("An error occurred while submitting your proposal. Please try again.");
+      setError(err instanceof Error ? err.message : "An error occurred while submitting your proposal. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

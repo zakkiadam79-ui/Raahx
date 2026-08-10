@@ -5,10 +5,14 @@ require_once __DIR__ . '/Http.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/Validation.php';
 require_once __DIR__ . '/Auth.php';
+require_once __DIR__ . '/Mailer.php';
 require_once __DIR__ . '/../resources/services.php';
 require_once __DIR__ . '/../resources/team.php';
 require_once __DIR__ . '/../resources/blogs.php';
 require_once __DIR__ . '/../resources/case_studies.php';
+require_once __DIR__ . '/../resources/subscribers.php';
+require_once __DIR__ . '/../resources/proposals.php';
+require_once __DIR__ . '/../resources/blog_views.php';
 require_once __DIR__ . '/../resources/migration.php';
 
 function raahx_env(string $key, ?string $default = null): ?string
@@ -19,6 +23,20 @@ function raahx_env(string $key, ?string $default = null): ?string
     }
 
     return $value;
+}
+
+function raahx_bool(string|int|bool|null $value, bool $default = false): bool
+{
+    if ($value === null || $value === '') return $default;
+    if (is_bool($value)) return $value;
+    return in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
+}
+
+function raahx_smtp_secure(int $port, string|int|bool|null $requested): bool
+{
+    if ($port === 465) return true;
+    if ($port === 587) return false;
+    return raahx_bool($requested, true);
 }
 
 function raahx_config(): array
@@ -36,13 +54,26 @@ function raahx_config(): array
             'trim',
             explode(',', raahx_env(
                 'RAAHX_ALLOWED_ORIGINS',
-                'http://localhost:3000,http://127.0.0.1:3000',
+                'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000',
             )),
         ), static fn (string $origin): bool => $origin !== '')),
         'admin_secret_env' => raahx_env('RAAHX_ADMIN_SECRET_ENV', 'ADMIN_SECRET'),
         'session' => [
             'cookie_name' => raahx_env('RAAHX_SESSION_COOKIE', 'raahx_php_session'),
             'ttl_seconds' => (int) raahx_env('RAAHX_SESSION_TTL', '28800'),
+        ],
+        'app_url' => raahx_env('APP_URL', ''),
+        'mail' => [
+            'host' => raahx_env('SMTP_HOST', 'smtp.hostinger.com'),
+            'port' => (int) raahx_env('SMTP_PORT', '465'),
+            'secure' => raahx_smtp_secure(
+                (int) raahx_env('SMTP_PORT', '465'),
+                raahx_env('SMTP_SECURE', 'true'),
+            ),
+            'user' => raahx_env('SMTP_USER', 'hello@raahx.com'),
+            'pass' => raahx_env('SMTP_PASS'),
+            'from' => raahx_env('MAIL_FROM', 'hello@raahx.com'),
+            'to' => raahx_env('MAIL_TO', 'hello@raahx.com'),
         ],
     ];
 
@@ -85,6 +116,34 @@ function raahx_config(): array
             explode(',', $origins),
         ), static fn (string $origin): bool => $origin !== ''));
     }
+
+    $appUrl = raahx_env('APP_URL');
+    if ($appUrl !== null) {
+        $config['app_url'] = rtrim($appUrl, '/');
+    }
+
+    foreach (['host' => 'SMTP_HOST', 'user' => 'SMTP_USER', 'from' => 'MAIL_FROM', 'to' => 'MAIL_TO'] as $key => $envKey) {
+        $value = raahx_env($envKey);
+        if ($value !== null) {
+            $config['mail'][$key] = $value;
+        }
+    }
+
+    $smtpPassword = raahx_env('SMTP_PASS');
+    if ($smtpPassword !== null) {
+        $config['mail']['pass'] = $smtpPassword;
+    }
+
+    $smtpPort = raahx_env('SMTP_PORT');
+    if ($smtpPort !== null) {
+        $config['mail']['port'] = (int) $smtpPort;
+    }
+
+    $smtpSecure = raahx_env('SMTP_SECURE');
+    $config['mail']['secure'] = raahx_smtp_secure(
+        (int) ($config['mail']['port'] ?? 465),
+        $smtpSecure ?? ($config['mail']['secure'] ?? true),
+    );
 
     return $config;
 }

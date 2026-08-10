@@ -45,6 +45,22 @@ try {
         api_dispatch_case_studies($pdo, $config, $method, array_slice($segments, 1), $body);
     }
 
+    if ($resource === 'subscribers') {
+        api_dispatch_subscribers($pdo, $config, $method, array_slice($segments, 1), $body);
+    }
+
+    if ($resource === 'notify-subscribers') {
+        api_dispatch_notify_subscribers($pdo, $config, $method, array_slice($segments, 1), $body);
+    }
+
+    if ($resource === 'proposals') {
+        api_dispatch_proposals($pdo, $config, $method, array_slice($segments, 1), $body);
+    }
+
+    if ($resource === 'blog-views') {
+        api_dispatch_blog_views($pdo, $config, $method, array_slice($segments, 1), $body);
+    }
+
     if ($resource === 'migration') {
         api_dispatch_migration($pdo, $config, $method, array_slice($segments, 1), $body);
     }
@@ -225,6 +241,67 @@ function api_dispatch_case_studies(PDO $pdo, array $config, string $method, arra
     }
 
     throw new ApiException(404, 'NOT_FOUND', 'Case Study endpoint not found.');
+}
+
+function api_dispatch_subscribers(PDO $pdo, array $config, string $method, array $segments, array $body): void
+{
+    if ($segments === [] && $method === 'POST') {
+        Http::json(api_subscribers_create($pdo, $body));
+    }
+
+    if ($segments === [] && $method === 'GET') {
+        Auth::requireAuthenticated($pdo, $config);
+        Http::json(api_subscribers_list($pdo));
+    }
+
+    if ($segments === []) {
+        Http::methodNotAllowed(['GET', 'POST']);
+    }
+
+    throw new ApiException(404, 'NOT_FOUND', 'Subscriber endpoint not found.');
+}
+
+function api_dispatch_notify_subscribers(PDO $pdo, array $config, string $method, array $segments, array $body): void
+{
+    Auth::requireAuthenticated($pdo, $config);
+    if ($segments !== []) {
+        throw new ApiException(404, 'NOT_FOUND', 'Subscriber notification endpoint not found.');
+    }
+    if ($method !== 'POST') {
+        Http::methodNotAllowed(['POST']);
+    }
+
+    Http::json(api_notify_subscribers($pdo, $config, $body));
+}
+
+function api_dispatch_proposals(PDO $pdo, array $config, string $method, array $segments, array $body): void
+{
+    if ($segments === [] && $method === 'POST') {
+        Http::json(api_proposals_create($pdo, $body, $config));
+    }
+
+    if ($segments === []) {
+        Http::methodNotAllowed(['POST']);
+    }
+
+    throw new ApiException(404, 'NOT_FOUND', 'Proposal endpoint not found.');
+}
+
+function api_dispatch_blog_views(PDO $pdo, array $config, string $method, array $segments, array $body): void
+{
+    if (count($segments) === 1 && $segments[0] === 'popular' && $method === 'GET') {
+        Http::json(api_blog_views_popular($pdo, $_GET['limit'] ?? 3));
+    }
+
+    if (count($segments) === 1 && $method === 'POST') {
+        Http::json(api_blog_views_increment($pdo, $segments[0]));
+    }
+
+    if ($segments !== []) {
+        throw new ApiException(404, 'NOT_FOUND', 'Blog views endpoint not found.');
+    }
+
+    Http::methodNotAllowed(['GET', 'POST']);
 }
 
 function api_dispatch_migration(PDO $pdo, array $config, string $method, array $segments, array $body): void
