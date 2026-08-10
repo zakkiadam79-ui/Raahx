@@ -190,16 +190,36 @@ async function startServer() {
     console.warn("MONGODB_URI not provided. Running without database connection.");
   }
 
-  // Nodemailer Transporter
+  // Nodemailer Transporter. SMTP_PASS is read only on the server; it is never
+  // bundled into the React/Vite client or returned by an API response.
+  const smtpHost = process.env.SMTP_HOST || "smtp.hostinger.com";
+  const smtpPort = Number.parseInt(process.env.SMTP_PORT || "465", 10);
+  const smtpSecure = process.env.SMTP_SECURE === undefined
+    ? true
+    : /^(true|1|yes)$/i.test(process.env.SMTP_SECURE);
+  const smtpUser = process.env.SMTP_USER || "hello@raahx.com";
+  const mailFrom = process.env.MAIL_FROM || "hello@raahx.com";
+  const mailTo = process.env.MAIL_TO || "hello@raahx.com";
+
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: false, // true for 465, false for other ports
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
     auth: {
-      user: process.env.SMTP_USER,
+      user: smtpUser,
       pass: process.env.SMTP_PASS,
     },
   });
+
+  const isSafeEmail = (value: unknown): value is string => (
+    typeof value === "string"
+    && !/[\r\n]/.test(value)
+    && /^\S+@\S+\.\S+$/.test(value)
+  );
+
+  const getReplyTo = (value: unknown): string | undefined => (
+    isSafeEmail(value) ? value : undefined
+  );
 
   // API Routes
   app.get("/api/health", (req, res) => {
@@ -298,7 +318,7 @@ async function startServer() {
       for (const sub of subscribers) {
         try {
           await transporter.sendMail({
-            from: `"RaahX" <${process.env.SMTP_USER}>`,
+            from: `"RaahX" <${mailFrom}>`,
             to: sub.email,
             subject: `New on the RaahX Blog: ${title}`,
             html: `
@@ -373,9 +393,9 @@ async function startServer() {
 
       // Prepare email content
       const adminMailOptions = {
-        from: `"${data.fullName}" <${process.env.SMTP_USER}>`, // Use authenticated user as sender to avoid DMARC issues
-        replyTo: data.businessEmail,
-        to: process.env.NOTIFICATION_EMAIL || "hello@raahx.com",
+        from: `"RaahX" <${mailFrom}>`,
+        replyTo: getReplyTo(data.businessEmail),
+        to: mailTo,
         subject: "New Proposal Request - RaahX",
         html: `
           <h2>New Proposal Request</h2>
@@ -395,8 +415,8 @@ async function startServer() {
       };
 
       const clientMailOptions = {
-        from: `"RaahX" <${process.env.SMTP_USER}>`,
-        to: data.businessEmail,
+        from: `"RaahX" <${mailFrom}>`,
+        to: getReplyTo(data.businessEmail),
         subject: "Thank You for Contacting RaahX",
         html: `
           <p>Thank you for contacting RaahX.</p>
@@ -409,7 +429,7 @@ async function startServer() {
       };
 
       // Send emails
-      if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      if (process.env.SMTP_PASS) {
          await transporter.sendMail(adminMailOptions);
          await transporter.sendMail(clientMailOptions);
       } else {
