@@ -139,6 +139,15 @@ function getClientIp(req: Request): string {
   return req.ip || req.socket.remoteAddress || "unknown";
 }
 
+function isMongoDuplicateKeyError(error: unknown): boolean {
+  return Boolean(
+    error
+    && typeof error === "object"
+    && "code" in error
+    && (error as { code?: unknown }).code === 11000,
+  );
+}
+
 type SmtpMode = {
   host: string;
   port: number;
@@ -462,25 +471,49 @@ async function startServer() {
     });
   });
 
-  // Save a newsletter subscriber
+  // Save a newsletter subscriber. This is intentionally kept on the existing
+  // Node/MongoDB path; it does not send email and does not use the PHP API.
   app.post("/api/subscribers", async (req, res) => {
+    const submittedEmail = typeof req.body?.email === "string"
+      ? req.body.email.trim()
+      : "";
+
+    if (!isSafeEmail(submittedEmail)) {
+      return res.status(400).json({ error: "Please enter a valid email address." });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        error: "Newsletter subscription is temporarily unavailable. Please try again later.",
+      });
+    }
+
+    const email = submittedEmail.toLowerCase();
+
     try {
-      const { email } = req.body;
-      if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-        return res.status(400).json({ error: "A valid email is required" });
-      }
-      if (mongoose.connection.readyState !== 1) {
-        return res.status(503).json({ error: "Database not connected" });
-      }
-      await Subscriber.updateOne(
-        { email: email.toLowerCase().trim() },
-        { $setOnInsert: { email: email.toLowerCase().trim(), subscribedAt: new Date() } },
-        { upsert: true }
+      const result = await Subscriber.updateOne(
+        { email },
+        { $setOnInsert: { email, subscribedAt: new Date() } },
+        { upsert: true },
       );
-      res.status(200).json({ message: "Subscribed" });
+
+      if (result.upsertedCount === 0) {
+        return res.status(200).json({ message: "You are already subscribed." });
+      }
+
+      return res.status(200).json({ message: "Subscribed successfully." });
     } catch (error) {
-      console.error("Error saving subscriber:", error);
-      res.status(500).json({ error: "Failed to subscribe" });
+      if (isMongoDuplicateKeyError(error)) {
+        return res.status(200).json({ message: "You are already subscribed." });
+      }
+
+      console.error(
+        "Error saving subscriber:",
+        error instanceof Error ? error.message : "Unknown subscriber storage error",
+      );
+      return res.status(500).json({
+        error: "Newsletter subscription failed. Please try again later.",
+      });
     }
   });
 

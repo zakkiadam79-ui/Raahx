@@ -69,6 +69,7 @@ export default function BlogIndex() {
   const [popular, setPopular] = useState<PopularEntry[]>([]);
   const [subscribeEmail, setSubscribeEmail] = useState("");
   const [subscribeStatus, setSubscribeStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [subscribeMessage, setSubscribeMessage] = useState("");
   const [posts, setPosts] = useState<BlogPost[]>(() => getStoredPosts());
   const [services, setServices] = useState<ServiceData[]>(() => getStoredServices());
 
@@ -101,22 +102,60 @@ export default function BlogIndex() {
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subscribeEmail.trim()) return;
+    const email = subscribeEmail.trim();
+
+    if (!email) {
+      setSubscribeStatus("error");
+      setSubscribeMessage("Please enter a valid email address.");
+      setTimeout(() => {
+        setSubscribeStatus("idle");
+        setSubscribeMessage("");
+      }, 4000);
+      return;
+    }
 
     setSubscribeStatus("loading");
+    setSubscribeMessage("");
+
     try {
       const res = await fetch("/api/subscribers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: subscribeEmail.trim() }),
+        body: JSON.stringify({ email }),
       });
-      if (!res.ok) throw new Error("Subscribe failed");
+      const payload = await res.json().catch(() => null) as {
+        message?: unknown;
+        error?: unknown;
+      } | null;
+
+      if (!res.ok) {
+        throw new Error(
+          typeof payload?.error === "string"
+            ? payload.error
+            : "Newsletter subscription failed. Please try again later.",
+        );
+      }
+
       setSubscribeStatus("success");
+      setSubscribeMessage(
+        typeof payload?.message === "string" ? payload.message : "Subscribed successfully.",
+      );
       setSubscribeEmail("");
-      setTimeout(() => setSubscribeStatus("idle"), 4000);
-    } catch {
+      setTimeout(() => {
+        setSubscribeStatus("idle");
+        setSubscribeMessage("");
+      }, 4000);
+    } catch (error) {
       setSubscribeStatus("error");
-      setTimeout(() => setSubscribeStatus("idle"), 4000);
+      setSubscribeMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "Newsletter subscription failed. Please try again later.",
+      );
+      setTimeout(() => {
+        setSubscribeStatus("idle");
+        setSubscribeMessage("");
+      }, 4000);
     }
   };
 
@@ -359,12 +398,12 @@ export default function BlogIndex() {
 
               {subscribeStatus === "success" && (
                 <p className="mt-2 text-xs text-emerald-400 flex items-center justify-center md:justify-start gap-1">
-                  <CheckCircle size={14} /> Subscribed successfully!
+                  <CheckCircle size={14} /> {subscribeMessage || "Subscribed successfully."}
                 </p>
               )}
               {subscribeStatus === "error" && (
                 <p className="mt-2 text-xs text-rose-400 flex items-center justify-center md:justify-start gap-1">
-                  <AlertCircle size={14} /> Something went wrong. Try again.
+                  <AlertCircle size={14} /> {subscribeMessage || "Newsletter subscription failed. Please try again later."}
                 </p>
               )}
             </div>
