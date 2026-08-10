@@ -3,10 +3,22 @@ import path from "path";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { createServer as createViteServer } from "vite";
 import mongoose from "mongoose";
-import nodemailer from "nodemailer";
+import nodemailer, { type Transporter } from "nodemailer";
 import dotenv from "dotenv";
 
-dotenv.config();
+// Load .env before any runtime configuration is read. dotenv's default lookup
+// is the process working directory, and existing process.env values win over
+// values from .env because override is deliberately disabled.
+const processEnvKeysBeforeDotenv = new Set(Object.keys(process.env));
+const dotenvResult = dotenv.config({ override: false });
+const dotenvParsedKeys = new Set(Object.keys(dotenvResult.parsed ?? {}));
+const dotenvStatus = dotenvResult.error ? "NOT_LOADED" : "LOADED";
+
+function getEnvironmentSource(key: string): "process.env" | ".env" | "fallback" {
+  if (processEnvKeysBeforeDotenv.has(key)) return "process.env";
+  if (dotenvParsedKeys.has(key)) return ".env";
+  return "fallback";
+}
 
 const ADMIN_SESSION_COOKIE = "raahx_admin_session";
 const ADMIN_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
@@ -127,6 +139,102 @@ function getClientIp(req: Request): string {
   return req.ip || req.socket.remoteAddress || "unknown";
 }
 
+type SmtpMode = {
+  host: string;
+  port: number;
+  secure: boolean;
+};
+
+type SmtpRuntimeConfig = SmtpMode & {
+  requestedSecure: boolean | undefined;
+  user: string;
+  mailFrom: string;
+  mailTo: string;
+};
+
+type SmtpVerificationResult = SmtpMode & {
+  connectionResult: "SUCCEEDED" | "FAILED";
+  errorCode: string | null;
+  errorReason: string | null;
+};
+
+function getSafeSmtpError(error: unknown, password: string | undefined): {
+  code: string;
+  reason: string;
+} {
+  const candidate = error && typeof error === "object"
+    ? error as { code?: unknown; reason?: unknown; message?: unknown }
+    : {};
+  const code = typeof candidate.code === "string" ? candidate.code : "UNKNOWN";
+  const rawReason = typeof candidate.reason === "string"
+    ? candidate.reason
+    : typeof candidate.message === "string"
+    ? candidate.message
+    : "Unknown SMTP verification error";
+  const reason = password && password.length > 0
+    ? rawReason.split(password).join("[REDACTED]")
+    : rawReason;
+
+  return { code, reason: reason.slice(0, 1000) };
+}
+
+async function verifySmtpConnection(
+  mode: SmtpMode,
+  user: string,
+  password: string | undefined,
+  existingTransport?: Transporter,
+): Promise<SmtpVerificationResult> {
+  const transport = existingTransport ?? nodemailer.createTransport({
+    host: mode.host,
+    port: mode.port,
+    secure: mode.secure,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
+    auth: { user, pass: password },
+  });
+
+  try {
+    await transport.verify();
+    return {
+      ...mode,
+      connectionResult: "SUCCEEDED",
+      errorCode: null,
+      errorReason: null,
+    };
+  } catch (error) {
+    const safeError = getSafeSmtpError(error, password);
+    return {
+      ...mode,
+      connectionResult: "FAILED",
+      errorCode: safeError.code,
+      errorReason: safeError.reason,
+    };
+  } finally {
+    if (!existingTransport) {
+      transport.close();
+    }
+  }
+}
+
+function getSafeSmtpRuntimeConfig(
+  config: SmtpRuntimeConfig,
+  password: string | undefined,
+) {
+  return {
+    SMTP_HOST: config.host,
+    SMTP_PORT: config.port,
+    // This is the effective value passed to Nodemailer, not merely the raw
+    // environment string, so a port/security mismatch is visible.
+    SMTP_SECURE: config.secure,
+    SMTP_SECURE_REQUESTED: config.requestedSecure ?? "UNSET_OR_INVALID",
+    SMTP_USER: config.user,
+    MAIL_FROM: config.mailFrom,
+    MAIL_TO: config.mailTo,
+    SMTP_PASS: password ? "PRESENT" : "MISSING",
+  };
+}
+
 
 // MongoDB Schema
 const proposalSchema = new mongoose.Schema({
@@ -215,8 +323,26 @@ async function startServer() {
     console.warn(`SMTP_SECURE does not match SMTP_PORT ${smtpPort}; using secure=${smtpSecure}.`);
   }
   const smtpUser = process.env.SMTP_USER || "hello@raahx.com";
+  const smtpPassword = process.env.SMTP_PASS;
   const mailFrom = process.env.MAIL_FROM || "hello@raahx.com";
   const mailTo = process.env.MAIL_TO || "hello@raahx.com";
+  const smtpRuntimeConfig: SmtpRuntimeConfig = {
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
+    requestedSecure,
+    user: smtpUser,
+    mailFrom,
+    mailTo,
+  };
+
+  console.log(
+    `[SMTP] dotenv=${dotenvStatus}; ` +
+    `SMTP_HOST=${smtpHost}; SMTP_PORT=${smtpPort}; SMTP_SECURE=${smtpSecure}; ` +
+    `SMTP_SECURE_REQUESTED=${requestedSecure ?? "UNSET_OR_INVALID"}; ` +
+    `SMTP_USER=${smtpUser}; MAIL_FROM=${mailFrom}; MAIL_TO=${mailTo}; ` +
+    `SMTP_PASS=${smtpPassword ? "PRESENT" : "MISSING"}`,
+  );
 
   const transporter = nodemailer.createTransport({
     host: smtpHost,
@@ -224,7 +350,7 @@ async function startServer() {
     secure: smtpSecure,
     auth: {
       user: smtpUser,
-      pass: process.env.SMTP_PASS,
+      pass: smtpPassword,
     },
   });
 
@@ -287,6 +413,53 @@ async function startServer() {
 
     clearAdminSessionCookie(res);
     return res.status(200).json({ authenticated: false });
+  });
+
+  // Temporary server-side SMTP diagnostic. It is protected by the existing
+  // admin session and only calls Nodemailer's verify(); it never sends mail.
+  app.get("/api/admin/smtp/verify", requireAdminSession, async (_req, res) => {
+    const configuredResult = await verifySmtpConnection(
+      {
+        host: smtpRuntimeConfig.host,
+        port: smtpRuntimeConfig.port,
+        secure: smtpRuntimeConfig.secure,
+      },
+      smtpRuntimeConfig.user,
+      smtpPassword,
+      transporter,
+    );
+
+    const hostingerResults = await Promise.all([
+      verifySmtpConnection(
+        { host: "smtp.hostinger.com", port: 465, secure: true },
+        smtpRuntimeConfig.user,
+        smtpPassword,
+      ),
+      verifySmtpConnection(
+        { host: "smtp.hostinger.com", port: 587, secure: false },
+        smtpRuntimeConfig.user,
+        smtpPassword,
+      ),
+    ]);
+
+    return res.status(200).json({
+      dotenv: {
+        status: dotenvStatus,
+        lookup: "dotenv default: .env in process.cwd()",
+        override: "false; existing process.env values take precedence",
+        sources: {
+          SMTP_HOST: getEnvironmentSource("SMTP_HOST"),
+          SMTP_PORT: getEnvironmentSource("SMTP_PORT"),
+          SMTP_SECURE: getEnvironmentSource("SMTP_SECURE"),
+          SMTP_USER: getEnvironmentSource("SMTP_USER"),
+          MAIL_FROM: getEnvironmentSource("MAIL_FROM"),
+          MAIL_TO: getEnvironmentSource("MAIL_TO"),
+        },
+      },
+      runtime: getSafeSmtpRuntimeConfig(smtpRuntimeConfig, smtpPassword),
+      configuredTransport: configuredResult,
+      hostingerTests: hostingerResults,
+    });
   });
 
   // Save a newsletter subscriber
@@ -446,7 +619,7 @@ async function startServer() {
       };
 
       // Send emails
-      if (process.env.SMTP_PASS) {
+      if (smtpPassword) {
          await transporter.sendMail(adminMailOptions);
          await transporter.sendMail(clientMailOptions);
       } else {
