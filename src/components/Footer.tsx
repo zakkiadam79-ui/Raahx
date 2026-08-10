@@ -90,6 +90,7 @@ export default function Footer() {
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
           <p>&copy; {} 2025 RaahX. All rights reserved.</p>
           <div className="flex gap-6">
+            <Link to="/faq" className="hover:text-white transition-colors">FAQ</Link>
             <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
           </div>
