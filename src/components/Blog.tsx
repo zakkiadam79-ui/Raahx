@@ -1,13 +1,47 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
-import { blogsData, getInitials } from "../data/blogsData";
-import { servicesData } from "../data/servicesData";
+import { getInitials } from "../data/blogsData";
+import { getStoredServices } from "../services/serviceStore";
+import {
+  fetchBlogsFromApi,
+  getStoredPosts,
+  isBlogApiConfigured,
+  type BlogPost,
+} from "../services/blogStore";
+import { getServiceIcon } from "../utils/getServiceIcon";
+import type { ServiceData } from "../data/servicesData";
 
-function getService(serviceSlug: string) {
-  return servicesData.find((s) => s.slug === serviceSlug);
+function getService(serviceSlug: string, services: ServiceData[]) {
+  return services.find((service) => service.slug === serviceSlug);
 }
 
-function CoverArt({ Icon }: { Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }> }) {
+function CoverArt({
+  Icon,
+  image,
+}: {
+  Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  image?: string;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [image]);
+
+  if (image && !imageFailed) {
+    return (
+      <div className="relative h-full w-full overflow-hidden bg-secondary">
+        <img
+          src={image}
+          alt=""
+          onError={() => setImageFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full bg-gradient-to-br from-secondary via-secondary to-primary/60 overflow-hidden">
       <div
@@ -25,9 +59,49 @@ function CoverArt({ Icon }: { Icon: React.ComponentType<{ size?: number; strokeW
 }
 
 export default function Blog() {
-  const [featured, ...rest] = blogsData;
+  const [posts, setPosts] = useState<BlogPost[]>(() => getStoredPosts());
+  const [services] = useState<ServiceData[]>(() => getStoredServices());
+
+  useEffect(() => {
+    let isMounted = true;
+    const fallbackPosts = getStoredPosts();
+
+    if (!isBlogApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    fetchBlogsFromApi()
+      .then((remotePosts) => {
+        if (isMounted && (remotePosts.length > 0 || fallbackPosts.length === 0)) {
+          setPosts(remotePosts);
+        }
+      })
+      .catch((error) => {
+        console.warn("Blog API unavailable; using the local Blog fallback.", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const [featured, ...rest] = posts;
   const secondary = rest.slice(0, 2);
-  const featuredService = getService(featured.serviceSlug);
+
+  if (!featured) {
+    return (
+      <section id="blog" className="py-24 bg-surface">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-heading font-bold text-secondary mb-4">From the Blog</h2>
+          <p className="text-gray-600">New insights are being prepared. Check back soon.</p>
+        </div>
+      </section>
+    );
+  }
+
+  const featuredService = getService(featured.serviceSlug, services);
 
   return (
     <section id="blog" className="py-24 bg-surface">
@@ -50,7 +124,10 @@ export default function Blog() {
           className="group grid md:grid-cols-2 gap-0 bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 mb-8"
         >
           <div className="relative h-56 md:h-auto">
-            <CoverArt Icon={featuredService?.icon ?? (() => null)} />
+            <CoverArt
+              Icon={featuredService ? getServiceIcon(featuredService.icon) : (() => null)}
+              image={featured.image}
+            />
             {featuredService && (
               <span className="absolute top-5 left-5 inline-block text-xs font-semibold text-secondary bg-white px-3 py-1.5 rounded-full shadow-sm">
                 {featuredService.name}
@@ -85,15 +162,18 @@ export default function Blog() {
         {/* Secondary posts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {secondary.map((post) => {
-            const service = getService(post.serviceSlug);
+            const service = getService(post.serviceSlug, services);
             return (
               <Link
-                key={post.slug}
+                key={post.id}
                 to={`/blog/${post.slug}`}
                 className="group flex flex-col bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
               >
                 <div className="relative h-40">
-                  <CoverArt Icon={service?.icon ?? (() => null)} />
+                  <CoverArt
+                    Icon={service ? getServiceIcon(service.icon) : (() => null)}
+                    image={post.image}
+                  />
                   {service && (
                     <span className="absolute top-4 left-4 inline-block text-xs font-semibold text-secondary bg-white px-3 py-1 rounded-full shadow-sm">
                       {service.name}

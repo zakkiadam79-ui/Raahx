@@ -2,17 +2,42 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Sparkles, CheckCircle2, ArrowRight } from "lucide-react";
 import { servicesData as staticServices, ServiceData } from "../data/servicesData";
+import {
+  fetchServicesFromApi,
+  getStoredServices,
+  isServiceApiConfigured,
+  type ServiceRecord,
+} from "../services/serviceStore";
 import { getServiceIcon } from "../utils/getServiceIcon";
 
 export default function ServiceDetail() {
   const { slug } = useParams();
-  const [services, setServices] = useState<ServiceData[]>(staticServices);
+  const [services, setServices] = useState<ServiceRecord[]>(staticServices);
 
   useEffect(() => {
-    const saved = localStorage.getItem("raahx_services_data");
-    if (saved) {
-      setServices(JSON.parse(saved));
+    let isMounted = true;
+    const fallbackServices = getStoredServices();
+    setServices(fallbackServices);
+
+    if (!isServiceApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
     }
+
+    fetchServicesFromApi()
+      .then((remoteServices) => {
+        if (isMounted && (remoteServices.length > 0 || fallbackServices.length === 0)) {
+          setServices(remoteServices);
+        }
+      })
+      .catch((error) => {
+        console.warn("Services API unavailable; using the local service fallback.", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const service = services.find((s) => s.slug === slug);

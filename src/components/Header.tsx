@@ -3,14 +3,49 @@ import { Link } from "react-router-dom";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import logoImage from "../assets/images/logo.png";
-import { servicesData } from "../data/servicesData";
+import { servicesData as staticServices, type ServiceData } from "../data/servicesData";
+import {
+  fetchServicesFromApi,
+  getStoredServices,
+  isServiceApiConfigured,
+} from "../services/serviceStore";
+import { getServiceIcon } from "../utils/getServiceIcon";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
+  const [services, setServices] = useState<ServiceData[]>(staticServices);
   const servicesRef = useRef<HTMLDivElement>(null);
+
+  // Keep the header menu synchronized with the same normalized service store
+  // used by the public Services section and service detail pages.
+  useEffect(() => {
+    let isMounted = true;
+    const fallbackServices = getStoredServices();
+    setServices(fallbackServices);
+
+    if (!isServiceApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    fetchServicesFromApi()
+      .then((remoteServices) => {
+        if (isMounted && (remoteServices.length > 0 || fallbackServices.length === 0)) {
+          setServices(remoteServices);
+        }
+      })
+      .catch((error) => {
+        console.warn("Services API unavailable; using the local service fallback.", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Close mobile menu + lock background scroll while it's open
   useEffect(() => {
@@ -96,8 +131,8 @@ export default function Header() {
                   className="w-[300px] rounded-2xl border border-gray-100 shadow-2xl p-2 max-h-[420px] overflow-y-auto"
                   style={{ backgroundColor: "#ffffff" }}
                 >
-                  {servicesData.map((service) => {
-                    const Icon = service.icon;
+                  {services.map((service) => {
+                    const Icon = getServiceIcon(service.icon);
                     return (
                       <Link
                         key={service.slug}
@@ -203,7 +238,7 @@ export default function Header() {
 
             {mobileServicesOpen && (
               <div className="mt-4 flex flex-col gap-3">
-                {servicesData.map((service) => (
+                {services.map((service) => (
                   <Link
                     key={service.slug}
                     to={`/services/${service.slug}`}

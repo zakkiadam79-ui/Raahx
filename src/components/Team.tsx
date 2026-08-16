@@ -1,58 +1,71 @@
 import { useEffect, useState } from "react";
-import qasimImage from "../assets/images/Qasim.png";
-import dawoodImage from "../assets/images/dawood.png";
-import shabanImage from "../assets/images/MrShaban.jpeg";
-import sarahImage from "../assets/images/Sarah-Khan.jpeg";
-import mahazImage from "../assets/images/mahaz.jpeg";
-import ashirImage from "../assets/images/ashir.jpeg";
+import {
+  fetchTeamFromApi,
+  getStoredTeamMembers,
+  isTeamApiConfigured,
+  type TeamRecord,
+} from "../services/teamStore";
+import type { TeamMember } from "../data/teamData";
 
-const initialTeam = [
-  {
-    name: "M Qasim",
-    role: "CEO & Founder",
-    image: qasimImage,
-    linkedin: "https://www.linkedin.com/in/muhammad-qasim-738902249",
-  },
-  {
-    name: "Dawood Jalil",
-    role: "Head of Marketing",
-    image: dawoodImage,
-  },
-  {
-    name: "M Shaban",
-    role: "Full Stack Developer",
-    image: shabanImage,
-    linkedin: "https://www.linkedin.com/in/muhammad-shaban-0048b5344",
-  },
-  {
-    name: "Mahaz Sattar",
-    role: "Software Engineer",
-    image: mahazImage,
-    linkedin: "https://www.linkedin.com/in/mahaz-sattar-b4934b375",
-  },
-  {
-    name: "Ashir Ali Shah",
-    role: "SEO Specialist",
-    image: ashirImage,
-  },
-  {
-    name: "Sarah Khan",
-    role: "Creative Director",
-    image: sarahImage,
-  },
-];
-
-export default function Team() {
-  const [teamMembers, setTeamMembers] = useState(initialTeam);
+function TeamMemberImage({ member }: { member: TeamMember }) {
+  const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("raahx_team_data");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.length > 0) {
-        setTeamMembers(parsed);
-      }
+    setImageFailed(false);
+  }, [member.image]);
+
+  if (member.image && !imageFailed) {
+    return (
+      <div className="w-32 h-32 mb-6 rounded-full overflow-hidden border-4 border-teal-50 group-hover:border-primary/20 transition-colors cursor-pointer">
+        <img
+          src={member.image}
+          alt={member.name}
+          onError={() => setImageFailed(true)}
+          className="w-full h-full object-cover filter grayscale group-hover:grayscale-0 transition-all duration-500"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-32 h-32 mb-6 rounded-full overflow-hidden border-4 border-teal-50 bg-gray-100 flex items-center justify-center group-hover:border-primary/20 transition-colors cursor-pointer">
+      <span className="text-4xl font-bold text-gray-300">
+        {member.name.charAt(0)}
+      </span>
+    </div>
+  );
+}
+
+export default function Team() {
+  const [teamMembers, setTeamMembers] = useState<TeamRecord[]>(() => getStoredTeamMembers());
+
+  useEffect(() => {
+    let isMounted = true;
+    const fallbackMembers = getStoredTeamMembers();
+    setTeamMembers(fallbackMembers);
+
+    if (!isTeamApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
     }
+
+    fetchTeamFromApi()
+      .then((remoteMembers) => {
+        // Keep the current data visible until the first successful migration
+        // has populated the API, rather than flashing an empty Team section.
+        if (isMounted && (remoteMembers.length > 0 || fallbackMembers.length === 0)) {
+          setTeamMembers(remoteMembers);
+        }
+      })
+      .catch((error) => {
+        console.warn("Team API unavailable; using the local Team fallback.", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
@@ -68,9 +81,9 @@ export default function Team() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {teamMembers.map((member, idx) => (
+          {teamMembers.map((member) => (
             <div
-              key={idx}
+              key={member.id}
               className="group flex flex-col items-center bg-white p-6 rounded-3xl border border-gray-100 hover:shadow-xl transition-all duration-300"
             >
               <a
@@ -79,22 +92,7 @@ export default function Team() {
                 rel="noopener noreferrer"
                 aria-label={`${member.name} on LinkedIn`}
               >
-                {member.image ? (
-                  <div className="w-32 h-32 mb-6 rounded-full overflow-hidden border-4 border-teal-50 group-hover:border-primary/20 transition-colors cursor-pointer">
-                    <img
-                      src={member.image}
-                      alt={member.name}
-                      className="w-full h-full object-cover filter grayscale group-hover:grayscale-0 transition-all duration-500"
-                      loading="lazy"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-32 h-32 mb-6 rounded-full overflow-hidden border-4 border-teal-50 bg-gray-100 flex items-center justify-center group-hover:border-primary/20 transition-colors cursor-pointer">
-                    <span className="text-4xl font-bold text-gray-300">
-                      {member.name.charAt(0)}
-                    </span>
-                  </div>
-                )}
+                <TeamMemberImage member={member} />
               </a>
               <h3 className="text-lg font-heading font-semibold text-secondary mb-1">
                 {member.name}

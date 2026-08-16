@@ -1,20 +1,56 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowRight, ArrowLeft, TrendingUp } from "lucide-react";
-import { defaultCaseStudies, CaseStudyData } from "../data/caseStudiesData";
+import {
+  fetchCaseStudyBySlugFromApi,
+  fetchCaseStudiesFromApi,
+  getCaseStudyBySlug,
+  getStoredCaseStudies,
+  isCaseStudyApiConfigured,
+  type CaseStudyRecord,
+} from "../services/caseStudyStore";
 
 export default function CaseStudyDetail() {
   const { slug } = useParams();
-  const [caseStudies, setCaseStudies] = useState<CaseStudyData[]>(defaultCaseStudies);
+  const [caseStudies, setCaseStudies] = useState<CaseStudyRecord[]>(() => getStoredCaseStudies());
+  const [remoteStudy, setRemoteStudy] = useState<CaseStudyRecord | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("raahx_casestudies_data");
-    if (saved) {
-      setCaseStudies(JSON.parse(saved));
-    }
-  }, []);
+    let isMounted = true;
+    const fallbackStudies = getStoredCaseStudies();
+    setCaseStudies(fallbackStudies);
+    setRemoteStudy(null);
 
-  const study = caseStudies.find((s) => s.slug === slug);
+    if (slug && isCaseStudyApiConfigured()) {
+      fetchCaseStudyBySlugFromApi(slug)
+        .then((remote) => {
+          if (isMounted) setRemoteStudy(remote);
+        })
+        .catch((error) => {
+          console.warn("Case Study detail API unavailable; using the local fallback.", error);
+        });
+
+      fetchCaseStudiesFromApi()
+        .then((remoteStudies) => {
+          if (isMounted && (remoteStudies.length > 0 || fallbackStudies.length === 0)) {
+            setCaseStudies(remoteStudies);
+          }
+        })
+        .catch(() => {
+          // The individual detail request still provides the best available fallback.
+        });
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [slug]);
+
+  const study = (remoteStudy && slug && (remoteStudy.slug === slug || remoteStudy.legacySlugs?.includes(slug)))
+    ? remoteStudy
+    : slug
+    ? getCaseStudyBySlug(caseStudies, slug)
+    : undefined;
 
   if (!study) {
     return (
@@ -54,8 +90,8 @@ export default function CaseStudyDetail() {
       {/* Metrics */}
       <section className="py-12 bg-secondary">
         <div className="max-w-5xl mx-auto px-6 lg:px-8 grid grid-cols-3 gap-6 text-center">
-          {study.metrics.map((metric, i) => (
-            <div key={i}>
+          {study.metrics.map((metric, index) => (
+            <div key={index}>
               <div className="text-3xl md:text-4xl font-heading font-bold text-white mb-1">{metric.value}</div>
               <div className="font-body text-base text-gray-400">{metric.label}</div>
             </div>
@@ -84,10 +120,10 @@ export default function CaseStudyDetail() {
             Our Approach
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {study.approach.map((step, i) => (
-              <div key={i} className="flex gap-4 p-6 bg-white rounded-2xl border border-border">
+            {study.approach.map((step, index) => (
+              <div key={index} className="flex gap-4 p-6 bg-white rounded-2xl border border-border">
                 <div className="w-10 h-10 shrink-0 rounded-full bg-primary/10 text-primary font-heading font-bold flex items-center justify-center">
-                  {i + 1}
+                  {index + 1}
                 </div>
                 <div>
                   <h3 className="font-heading font-semibold text-secondary text-xl mb-1">{step.title}</h3>

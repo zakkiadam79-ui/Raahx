@@ -203,10 +203,6 @@ export const blogsData: BlogPost[] = [
   },
 ];
 
-export function getBlogBySlug(slug: string): BlogPost | undefined {
-  return blogsData.find((post) => post.slug === slug);
-}
-
 export function getInitials(name: string): string {
   return name
     .split(" ")

@@ -1,14 +1,47 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Search, Mail, Loader2, CheckCircle, AlertCircle } from "lucide-react";
-import { blogsData, getBlogBySlug, type BlogPost } from "../data/blogsData";
-import { servicesData, type ServiceData } from "../data/servicesData";
+import { getInitials } from "../data/blogsData";
+import { getStoredServices, serviceApiUrl } from "../services/serviceStore";
+import {
+  fetchBlogsFromApi,
+  getStoredPosts,
+  isBlogApiConfigured,
+  type BlogPost,
+} from "../services/blogStore";
+import type { ServiceData } from "../data/servicesData";
+import { getServiceIcon } from "../utils/getServiceIcon";
 
-function getService(serviceSlug: string): ServiceData | undefined {
-  return servicesData.find((s) => s.slug === serviceSlug);
+function getService(serviceSlug: string, services: ServiceData[]): ServiceData | undefined {
+  return services.find((service) => service.slug === serviceSlug);
 }
 
-function CoverArt({ Icon }: { Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }> }) {
+function CoverArt({
+  Icon,
+  image,
+}: {
+  Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  image?: string;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [image]);
+
+  if (image && !imageFailed) {
+    return (
+      <div className="relative h-full w-full overflow-hidden bg-secondary">
+        <img
+          src={image}
+          alt=""
+          onError={() => setImageFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full bg-gradient-to-br from-secondary via-secondary to-primary/60 overflow-hidden">
       <div
@@ -36,58 +69,135 @@ export default function BlogIndex() {
   const [popular, setPopular] = useState<PopularEntry[]>([]);
   const [subscribeEmail, setSubscribeEmail] = useState("");
   const [subscribeStatus, setSubscribeStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [subscribeMessage, setSubscribeMessage] = useState("");
+  const [posts, setPosts] = useState<BlogPost[]>(() => getStoredPosts());
+  const [services, setServices] = useState<ServiceData[]>(() => getStoredServices());
+
+  useEffect(() => {
+    let isMounted = true;
+    const fallbackPosts = getStoredPosts();
+    setPosts(fallbackPosts);
+    setServices(getStoredServices());
+
+    if (!isBlogApiConfigured()) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    fetchBlogsFromApi()
+      .then((remotePosts) => {
+        if (isMounted && (remotePosts.length > 0 || fallbackPosts.length === 0)) {
+          setPosts(remotePosts);
+        }
+      })
+      .catch((error) => {
+        console.warn("Blog API unavailable; using the local Blog fallback.", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subscribeEmail.trim()) return;
+    const email = subscribeEmail.trim();
+
+    if (!email) {
+      setSubscribeStatus("error");
+      setSubscribeMessage("Please enter a valid email address.");
+      setTimeout(() => {
+        setSubscribeStatus("idle");
+        setSubscribeMessage("");
+      }, 4000);
+      return;
+    }
 
     setSubscribeStatus("loading");
+    setSubscribeMessage("");
+
     try {
-      const res = await fetch("/api/subscribers", {
+      const res = await fetch(serviceApiUrl("/subscribers"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: subscribeEmail.trim() }),
+        credentials: "include",
+        body: JSON.stringify({ email }),
       });
-      if (!res.ok) throw new Error("Subscribe failed");
+      const payload = await res.json().catch(() => null) as {
+        success?: boolean;
+        data?: { message?: unknown };
+        error?: { message?: unknown };
+      } | null;
+
+      if (!res.ok || payload?.success !== true) {
+        throw new Error(
+          typeof payload?.error?.message === "string"
+            ? payload.error.message
+            : "Newsletter subscription failed. Please try again later.",
+        );
+      }
+
       setSubscribeStatus("success");
+      setSubscribeMessage(
+        typeof payload.data?.message === "string" ? payload.data.message : "Subscribed successfully.",
+      );
       setSubscribeEmail("");
-      setTimeout(() => setSubscribeStatus("idle"), 4000);
-    } catch {
+      setTimeout(() => {
+        setSubscribeStatus("idle");
+        setSubscribeMessage("");
+      }, 4000);
+    } catch (error) {
       setSubscribeStatus("error");
-      setTimeout(() => setSubscribeStatus("idle"), 4000);
+      setSubscribeMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "Newsletter subscription failed. Please try again later.",
+      );
+      setTimeout(() => {
+        setSubscribeStatus("idle");
+        setSubscribeMessage("");
+      }, 4000);
     }
   };
 
   const categoryCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    blogsData.forEach((post) => {
+    posts.forEach((post) => {
       counts.set(post.serviceSlug, (counts.get(post.serviceSlug) ?? 0) + 1);
     });
-    return servicesData
+    return services
       .map((service) => ({ service, count: counts.get(service.slug) ?? 0 }))
       .filter((entry) => entry.count > 0);
-  }, []);
+  }, [posts, services]);
 
   const filteredPosts = useMemo(() => {
-    return blogsData.filter((post) => {
+    return posts.filter((post) => {
       const matchesService = !activeService || post.serviceSlug === activeService;
       if (!matchesService) return false;
       if (!query.trim()) return true;
-      const service = getService(post.serviceSlug);
+      const service = getService(post.serviceSlug, services);
       const haystack = `${post.title} ${post.excerpt} ${service?.name ?? ""}`.toLowerCase();
       return haystack.includes(query.trim().toLowerCase());
     });
-  }, [activeService, query]);
+  }, [activeService, posts, query, services]);
 
   useEffect(() => {
-    fetch("/api/blog-views/popular?limit=3")
-      .then((res) => res.json())
-      .then((data) => setPopular(data.posts ?? []))
+    fetch(serviceApiUrl("/blog-views/popular?limit=3"))
+      .then(async (res) => {
+        const payload = await res.json().catch(() => null) as {
+          success?: boolean;
+          data?: { posts?: PopularEntry[] };
+        } | null;
+        if (!res.ok || payload?.success !== true) throw new Error("Popular posts unavailable");
+        return payload.data?.posts ?? [];
+      })
+      .then((postsFromApi) => setPopular(postsFromApi))
       .catch(() => setPopular([]));
   }, []);
 
   const popularPosts: BlogPost[] = popular
-    .map((entry) => getBlogBySlug(entry.slug))
+    .map((entry) => posts.find((post) => post.slug === entry.slug || post.legacySlugs?.includes(entry.slug)))
     .filter((p): p is BlogPost => Boolean(p));
 
   return (
@@ -107,7 +217,7 @@ export default function BlogIndex() {
               >
                 All Posts
               </button>
-              {servicesData.map((service) => (
+              {services.map((service) => (
                 <button
                   key={service.slug}
                   onClick={() => setActiveService(service.slug)}
@@ -148,7 +258,7 @@ export default function BlogIndex() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {filteredPosts.map((post) => {
-                  const service = getService(post.serviceSlug);
+                  const service = getService(post.serviceSlug, services);
                   return (
                     <Link
                       key={post.slug}
@@ -156,7 +266,10 @@ export default function BlogIndex() {
                       className="group flex flex-col bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
                     >
                       <div className="relative h-44">
-                        <CoverArt Icon={service?.icon ?? (() => null)} />
+                        <CoverArt
+                          Icon={service ? getServiceIcon(service.icon) : (() => null)}
+                          image={post.image}
+                        />
                         {service && (
                           <span className="absolute top-4 left-4 inline-block text-xs font-semibold text-secondary bg-white px-3 py-1 rounded-full shadow-sm">
                             {service.name}
@@ -190,20 +303,23 @@ export default function BlogIndex() {
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h3 className="font-heading font-bold text-secondary text-base mb-5">Categories</h3>
               <ul className="space-y-3 max-h-72 overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
-                {categoryCounts.map(({ service, count }) => (
-                  <li key={service.slug}>
-                    <button
-                      onClick={() => setActiveService(service.slug)}
-                      className="w-full flex items-start justify-between gap-3 text-sm text-gray-600 hover:text-primary transition-colors text-left"
-                    >
-                      <span className="flex items-start gap-2 min-w-0">
-                        <service.icon size={15} className="text-primary shrink-0 mt-0.5" />
-                        <span className="min-w-0">{service.name}</span>
-                      </span>
-                      <span className="text-gray-400 shrink-0">{count}</span>
-                    </button>
-                  </li>
-                ))}
+                {categoryCounts.map(({ service, count }) => {
+                  const Icon = getServiceIcon(service.icon);
+                  return (
+                    <li key={service.slug}>
+                      <button
+                        onClick={() => setActiveService(service.slug)}
+                        className="w-full flex items-start justify-between gap-3 text-sm text-gray-600 hover:text-primary transition-colors text-left"
+                      >
+                        <span className="flex items-start gap-2 min-w-0">
+                          <Icon size={15} className="text-primary shrink-0 mt-0.5" />
+                          <span className="min-w-0">{service.name}</span>
+                        </span>
+                        <span className="text-gray-400 shrink-0">{count}</span>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
 
@@ -213,7 +329,7 @@ export default function BlogIndex() {
                 <h3 className="font-heading font-bold text-secondary text-base mb-5">Popular Posts</h3>
                 <ul className="space-y-4">
                   {popularPosts.map((post, i) => {
-                    const service = getService(post.serviceSlug);
+                    const service = getService(post.serviceSlug, services);
                     return (
                       <li key={post.slug}>
                         <Link to={`/blog/${post.slug}`} className="flex items-center gap-3 group">
@@ -221,7 +337,10 @@ export default function BlogIndex() {
                             {String(i + 1).padStart(2, "0")}
                           </span>
                           <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
-                            <CoverArt Icon={service?.icon ?? (() => null)} />
+                            <CoverArt
+                              Icon={service ? getServiceIcon(service.icon) : (() => null)}
+                              image={post.image}
+                            />
                           </div>
                           <span className="text-sm font-medium text-secondary leading-snug group-hover:text-primary transition-colors">
                             {post.title}
@@ -288,12 +407,12 @@ export default function BlogIndex() {
 
               {subscribeStatus === "success" && (
                 <p className="mt-2 text-xs text-emerald-400 flex items-center justify-center md:justify-start gap-1">
-                  <CheckCircle size={14} /> Subscribed successfully!
+                  <CheckCircle size={14} /> {subscribeMessage || "Subscribed successfully."}
                 </p>
               )}
               {subscribeStatus === "error" && (
                 <p className="mt-2 text-xs text-rose-400 flex items-center justify-center md:justify-start gap-1">
-                  <AlertCircle size={14} /> Something went wrong. Try again.
+                  <AlertCircle size={14} /> {subscribeMessage || "Newsletter subscription failed. Please try again later."}
                 </p>
               )}
             </div>

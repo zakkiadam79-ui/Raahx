@@ -1,24 +1,60 @@
-// src/pages/SecretAdminLogin.tsx
 import React, { useState } from "react";
+import { isServiceApiConfigured, serviceApiUrl } from "../services/serviceStore";
 
 interface Props {
   onLoginSuccess: () => void;
 }
 
+interface LoginResponse {
+  success?: boolean;
+  data?: { authenticated?: boolean };
+  error?: { message?: string };
+}
+
 export default function SecretAdminLogin({ onLoginSuccess }: Props) {
   const [passcode, setPasscode] = useState("");
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Set your secret local passcode here
-  const SECRET_PASSCODE = "admin123";
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passcode === SECRET_PASSCODE) {
-      localStorage.setItem("raahx_admin_auth", "true");
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      if (!isServiceApiConfigured()) {
+        setError("The PHP API is not configured for this environment.");
+        return;
+      }
+
+      const response = await fetch(serviceApiUrl("/auth/login"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ secret: passcode }),
+      });
+      const data = await response.json().catch(() => null) as LoginResponse | null;
+
+      if (response.status === 401) {
+        setError("Incorrect passcode");
+        return;
+      }
+
+      if (response.status === 429) {
+        setError("Too many attempts. Please try again later.");
+        return;
+      }
+
+      if (!response.ok || data?.success !== true || data.data?.authenticated !== true) {
+        setError(data?.error?.message || "Admin authentication is temporarily unavailable.");
+        return;
+      }
+
       onLoginSuccess();
-    } else {
-      setError(true);
+    } catch {
+      setError("Unable to contact the PHP authentication API.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -35,19 +71,22 @@ export default function SecretAdminLogin({ onLoginSuccess }: Props) {
               value={passcode}
               onChange={(e) => {
                 setPasscode(e.target.value);
-                setError(false);
+                setError(null);
               }}
               placeholder="Passcode"
-              className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#2DD4BF]"
+              autoComplete="current-password"
+              disabled={isSubmitting}
+              className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#2DD4BF] disabled:opacity-60"
             />
-            {error && <p className="text-red-400 text-xs mt-2">Incorrect passcode</p>}
+            {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 bg-[#14B8A6] hover:bg-[#0d9488] text-white font-semibold rounded-xl transition-colors"
+            disabled={isSubmitting}
+            className="w-full py-3 bg-[#14B8A6] hover:bg-[#0d9488] text-white font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Authenticate
+            {isSubmitting ? "Authenticating..." : "Authenticate"}
           </button>
         </form>
       </div>

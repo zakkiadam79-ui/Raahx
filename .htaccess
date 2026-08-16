@@ -1,0 +1,14 @@
+Options -MultiViews
+
+RewriteEngine On
+
+# Leave all API requests to api/.htaccess and api/index.php.
+RewriteRule ^api(?:/|$) - [L]
+
+# Serve existing files and directories normally.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Send all other paths to the React/Vite SPA entry point.
+RewriteRule ^ index.html [L]

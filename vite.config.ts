@@ -12,10 +12,10 @@ export default defineConfig(() => {
       },
     },
     server: {
-      // Proxy API calls to backend Express server
+      // Proxy API calls to the local PHP server during development.
       proxy: {
         '/api': {
-          target: 'http://localhost:5000',
+          target: 'http://localhost:8000',
           changeOrigin: true,
           secure: false,
         },
@@ -25,7 +25,7 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
-      allowedHosts: ['.ngrok-free.dev', '.ngrok-free.app'],
+      allowedHosts: ['.ngrok-free.dev', '.ngrok-free.app', '.e2b.app'],
     },
   };
 });
