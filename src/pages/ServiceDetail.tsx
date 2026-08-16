@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Sparkles, CheckCircle2, ArrowRight } from "lucide-react";
-import { servicesData as staticServices, ServiceData } from "../data/servicesData";
+import {
+  servicesData as staticServices,
+  ServiceData,
+} from "../data/servicesData";
 import {
   fetchServicesFromApi,
   getStoredServices,
@@ -16,7 +19,15 @@ export default function ServiceDetail() {
 
   useEffect(() => {
     let isMounted = true;
-    setServices(getStoredServices());
+
+    // Load locally stored services first.
+    const storedServices = getStoredServices();
+
+    if (storedServices.length > 0) {
+      setServices(storedServices);
+    } else {
+      setServices(staticServices);
+    }
 
     if (!isServiceApiConfigured()) {
       return () => {
@@ -24,12 +35,27 @@ export default function ServiceDetail() {
       };
     }
 
+    // Load the services from the live PHP/MySQL API.
     fetchServicesFromApi()
       .then((remoteServices) => {
-        if (isMounted) setServices(remoteServices);
+        if (!isMounted) return;
+
+        // Never replace valid services with an empty API response.
+        if (remoteServices.length > 0) {
+          setServices(remoteServices);
+        } else {
+          setServices(staticServices);
+        }
       })
       .catch((error) => {
-        console.warn("Services API unavailable; using the local service fallback.", error);
+        console.warn(
+          "Services API unavailable; using the local service fallback.",
+          error,
+        );
+
+        if (isMounted) {
+          setServices(staticServices);
+        }
       });
 
     return () => {
@@ -45,6 +71,7 @@ export default function ServiceDetail() {
         <h1 className="text-2xl font-heading font-bold text-secondary mb-4">
           Service not found
         </h1>
+
         <Link to="/" className="text-primary font-medium">
           Back to Home
         </Link>
@@ -86,6 +113,7 @@ export default function ServiceDetail() {
                 size={20}
                 className="text-primary shrink-0 animate-bounce"
               />
+
               <span className="font-heading font-bold text-secondary text-lg md:text-xl leading-snug">
                 {service.heroTitle}
               </span>
@@ -109,6 +137,7 @@ export default function ServiceDetail() {
                 <div className="text-3xl md:text-4xl font-heading font-bold text-white mb-1">
                   {stat.value}
                 </div>
+
                 <div className="font-body text-base text-gray-400">
                   {stat.label}
                 </div>
@@ -138,6 +167,7 @@ export default function ServiceDetail() {
                 {service.whyChooseTitle}
               </h2>
             )}
+
             {service.whyChooseText && (
               <p className="font-body text-lg text-body leading-relaxed text-left">
                 {service.whyChooseText}
@@ -154,6 +184,7 @@ export default function ServiceDetail() {
             <h2 className="font-heading font-bold text-secondary text-3xl md:text-[42px] mb-12 text-center">
               How We Make It Happen
             </h2>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {service.process.map((step, i) => (
                 <div
@@ -163,10 +194,12 @@ export default function ServiceDetail() {
                   <div className="w-10 h-10 shrink-0 rounded-full bg-primary/10 text-primary font-heading font-bold flex items-center justify-center">
                     {i + 1}
                   </div>
+
                   <div>
                     <h3 className="font-heading font-semibold text-secondary text-2xl mb-1">
                       {step.title}
                     </h3>
+
                     <p className="font-body text-base text-body">
                       {step.description}
                     </p>
@@ -185,6 +218,7 @@ export default function ServiceDetail() {
             <h2 className="font-heading font-bold text-secondary text-3xl md:text-[42px] mb-12 text-center">
               Your Unfair Advantage
             </h2>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {service.benefits.map((benefit, i) => (
                 <div
@@ -192,9 +226,11 @@ export default function ServiceDetail() {
                   className="p-6 bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-all flex flex-col gap-3"
                 >
                   <CheckCircle2 size={28} className="text-primary" />
+
                   <h3 className="font-heading font-semibold text-secondary text-xl">
                     {benefit.title}
                   </h3>
+
                   <p className="font-body text-sm text-body">
                     {benefit.description}
                   </p>
@@ -212,6 +248,7 @@ export default function ServiceDetail() {
             <blockquote className="font-heading text-xl md:text-2xl italic font-light leading-relaxed">
               "{service.testimonial.quote}"
             </blockquote>
+
             {service.testimonial.author && (
               <p className="text-primary font-semibold text-base">
                 — {service.testimonial.author}
@@ -229,7 +266,8 @@ export default function ServiceDetail() {
           </h2>
 
           <p className="font-body text-gray-300 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-            Get a customized, data-driven roadmap tailored specifically to your business goals. No commitments, completely free.
+            Get a customized, data-driven roadmap tailored specifically to your
+            business goals. No commitments, completely free.
           </p>
 
           <div className="pt-4">
@@ -238,6 +276,7 @@ export default function ServiceDetail() {
               className="inline-flex items-center gap-3 bg-[#14B8A6] hover:bg-[#0d9488] text-white font-heading font-semibold text-lg px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group"
             >
               Get Your Free Proposal
+
               <ArrowRight
                 size={20}
                 className="group-hover:translate-x-1 transition-transform"

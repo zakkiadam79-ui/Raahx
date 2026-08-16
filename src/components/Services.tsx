@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { servicesData as staticServices, ServiceData } from "../data/servicesData";
+import {
+  servicesData as staticServices,
+  ServiceData,
+} from "../data/servicesData";
 import {
   fetchServicesFromApi,
   getStoredServices,
@@ -34,7 +37,16 @@ export default function Services() {
 
   useEffect(() => {
     let isMounted = true;
-    setServices(getStoredServices());
+
+    // Load locally stored services first.
+    // If storage is empty, keep the original static services.
+    const storedServices = getStoredServices();
+
+    if (storedServices.length > 0) {
+      setServices(storedServices);
+    } else {
+      setServices(staticServices);
+    }
 
     if (!isServiceApiConfigured()) {
       return () => {
@@ -42,12 +54,29 @@ export default function Services() {
       };
     }
 
+    // Load services from the production API.
     fetchServicesFromApi()
       .then((remoteServices) => {
-        if (isMounted) setServices(remoteServices);
+        if (!isMounted) return;
+
+        // IMPORTANT:
+        // Never replace working services with an empty API response.
+        if (remoteServices.length > 0) {
+          setServices(remoteServices);
+        } else {
+          setServices(staticServices);
+        }
       })
       .catch((error) => {
-        console.warn("Services API unavailable; using the local service fallback.", error);
+        // If the API fails, keep the already-loaded local/static services.
+        console.warn(
+          "Services API unavailable; using the local service fallback.",
+          error,
+        );
+
+        if (isMounted) {
+          setServices(staticServices);
+        }
       });
 
     return () => {
@@ -62,8 +91,10 @@ export default function Services() {
           <h2 className="text-3xl md:text-4xl font-heading font-bold text-secondary mb-4">
             Services
           </h2>
+
           <p className="text-body">
-            Comprehensive digital solutions tailored to scale your brand and maximize ROI.
+            Comprehensive digital solutions tailored to scale your brand and
+            maximize ROI.
           </p>
         </div>
 
@@ -71,6 +102,7 @@ export default function Services() {
           {services.map((service, idx) => {
             const Icon = getServiceIcon(service.icon);
             const style = cardStyles[cardPattern[idx % cardPattern.length]];
+
             return (
               <Link
                 to={`/services/${service.slug}`}
@@ -82,7 +114,10 @@ export default function Services() {
                 >
                   <Icon size={28} strokeWidth={1.5} />
                 </div>
-                <h3 className={`font-heading font-semibold text-sm md:text-base ${style.heading}`}>
+
+                <h3
+                  className={`font-heading font-semibold text-sm md:text-base ${style.heading}`}
+                >
                   {service.name}
                 </h3>
               </Link>
