@@ -1,0 +1,19 @@
+# RaahX
+
+RaahX is a digital innovation company helping businesses build stronger brands, high-performance websites, and measurable growth through digital strategy, marketing, design, and modern technology.
+
+## Website
+
+- [Homepage](https://raahx.com/): Overview of RaahX and its public services.
+- [About](https://raahx.com/about): Company background and approach.
+- [Services](https://raahx.com/services/digital-marketing): Digital marketing and growth services.
+- [Blog](https://raahx.com/blog): Public marketing, design, technology, and growth insights.
+- [Case Studies](https://raahx.com/case-studies/ecommerce-brand): Public examples of RaahX work.
+- [Proposal](https://raahx.com/proposal): Request a project proposal from RaahX.
+- [FAQ](https://raahx.com/faq): Frequently asked questions.
+- [Privacy Policy](https://raahx.com/privacy-policy): Privacy information.
+- [Terms of Service](https://raahx.com/terms-of-service): Website and inquiry terms.
+
+## Contact
+
+Public contact email: hello@raahx.com

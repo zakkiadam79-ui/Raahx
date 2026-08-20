@@ -2,6 +2,16 @@ Options -MultiViews
 
 RewriteEngine On
 
+# Consolidate HTTP and www requests on the preferred HTTPS hostname.
+RewriteCond %{HTTPS} !=on [OR]
+RewriteCond %{HTTP_HOST} ^www\.raahx\.com(?::\d+)?$ [NC]
+RewriteRule ^ https://raahx.com%{REQUEST_URI} [R=301,L,NE]
+
+# Send HSTS only on HTTPS responses. Do not use preload here.
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" "expr=%{HTTPS} == 'on'"
+</IfModule>
+
 # Leave all API requests to api/.htaccess and api/index.php.
 RewriteRule ^api(?:/|$) - [L]
 

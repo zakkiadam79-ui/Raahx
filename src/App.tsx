@@ -45,6 +45,33 @@ function ScrollToHash() {
   return null;
 }
 
+function CanonicalUrl() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/admin")) {
+      document.head.querySelector("link[rel=\"canonical\"]")?.remove();
+      return;
+    }
+
+    const pathname = location.pathname === "/"
+      ? "/"
+      : location.pathname.replace(/\/+$/, "");
+    const canonicalUrl = `https://raahx.com${pathname || "/"}`;
+    let canonical = document.head.querySelector<HTMLLinkElement>("link[rel=\"canonical\"]");
+
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.rel = "canonical";
+      document.head.appendChild(canonical);
+    }
+
+    canonical.href = canonicalUrl;
+  }, [location.pathname]);
+
+  return null;
+}
+
 function Home() {
   return (
     <main>
@@ -67,6 +94,7 @@ export default function App() {
     <div className="min-h-screen bg-background text-gray-900 font-body selection:bg-primary/20 selection:text-primary-dark">
       {!isAdminRoute && <Header />}
       <ScrollToHash />
+      <CanonicalUrl />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<AboutPage />} />
