@@ -3,7 +3,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Youtube, Twitter, Phone, Mail, MapPin } from "lucide-react";
-import logoImage from "../assets/images/logo.png";
+import logoImage from "../assets/images/logo.webp";
 
 export default function Footer() {
   return (
@@ -13,7 +13,15 @@ export default function Footer() {
           
           <div className="lg:col-span-1">
             <a href="/" className="inline-flex items-center gap-2 mb-6 group">
-              <img src={logoImage} alt="RaahX" className="h-14 md:h-20 w-auto object-contain grayscale invert mix-blend-screen" />
+              <img
+                src={logoImage}
+                alt="RaahX"
+                width={600}
+                height={258}
+                loading="lazy"
+                decoding="async"
+                className="h-14 md:h-20 w-auto object-contain grayscale invert mix-blend-screen"
+              />
             </a>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
               Empowering brands with data-driven strategies, creative excellence, and innovative technology. Your path, powered by innovation.

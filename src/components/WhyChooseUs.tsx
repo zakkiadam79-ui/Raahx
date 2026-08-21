@@ -9,12 +9,12 @@ import {
   Headphones,
   ArrowUpRight,
 } from "lucide-react";
-import qasimImage from "../assets/images/Qasim.png";
-import dawoodImage from "../assets/images/dawood.png";
-import shabanImage from "../assets/images/MrShaban.jpeg";
-import sarahImage from "../assets/images/Sarah-Khan.jpeg";
-import mahazImage from "../assets/images/mahaz.jpeg";
-import ashirImage from "../assets/images/ashir.jpeg";
+import qasimImage from "../assets/images/Qasim.webp";
+import dawoodImage from "../assets/images/dawood.webp";
+import shabanImage from "../assets/images/MrShaban.webp";
+import sarahImage from "../assets/images/Sarah-Khan.webp";
+import mahazImage from "../assets/images/mahaz.webp";
+import ashirImage from "../assets/images/ashir.webp";
 
 const ACCENT = "#14B8A6";
 
@@ -201,6 +201,10 @@ export default function WhyChooseUs() {
                       key={i}
                       src={src}
                       alt="RaahX team member"
+                      width={256}
+                      height={256}
+                      loading="lazy"
+                      decoding="async"
                       className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full border-2 sm:border-[3px] border-black object-cover shadow-lg"
                       style={{ zIndex: teamAvatars.length - i }}
                     />

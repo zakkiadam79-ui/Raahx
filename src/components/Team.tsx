@@ -20,9 +20,12 @@ function TeamMemberImage({ member }: { member: TeamMember }) {
         <img
           src={member.image}
           alt={member.name}
+          width={256}
+          height={256}
           onError={() => setImageFailed(true)}
           className="w-full h-full object-cover filter grayscale group-hover:grayscale-0 transition-all duration-500"
           loading="lazy"
+          decoding="async"
         />
       </div>
     );

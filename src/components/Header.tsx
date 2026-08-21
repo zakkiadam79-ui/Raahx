@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { cn } from "@/src/lib/utils";
-import logoImage from "../assets/images/logo.png";
+import logoImage from "../assets/images/logo.webp";
 import { servicesData as staticServices } from "../data/servicesData";
 import {
   fetchServicesFromApi,
@@ -124,6 +124,9 @@ export default function Header() {
             <img
               src={logoImage}
               alt="RaahX"
+              width={600}
+              height={258}
+              decoding="async"
               className="h-9 md:h-11 w-auto object-contain"
             />
           </Link>

@@ -1,9 +1,9 @@
-import qasimImage from "../assets/images/Qasim.png";
-import dawoodImage from "../assets/images/dawood.png";
-import shabanImage from "../assets/images/MrShaban.jpeg";
-import sarahImage from "../assets/images/Sarah-Khan.jpeg";
-import mahazImage from "../assets/images/mahaz.jpeg";
-import ashirImage from "../assets/images/ashir.jpeg";
+import qasimImage from "../assets/images/Qasim.webp";
+import dawoodImage from "../assets/images/dawood.webp";
+import shabanImage from "../assets/images/MrShaban.webp";
+import sarahImage from "../assets/images/Sarah-Khan.webp";
+import mahazImage from "../assets/images/mahaz.webp";
+import ashirImage from "../assets/images/ashir.webp";
 
 export interface TeamMember {
   id: string;

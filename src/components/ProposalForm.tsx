@@ -6,7 +6,7 @@ import { useSearchParams } from "react-router-dom";
 import { Loader2, CheckCircle2, ChevronDown, Check } from "lucide-react";
 import { serviceApiUrl } from "../services/serviceStore";
 import { cn } from "@/src/lib/utils";
-import logoImage from "../assets/images/logo.png";
+import logoImage from "../assets/images/logo.webp";
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters"),
@@ -362,6 +362,10 @@ export default function ProposalForm() {
                 src={logoImage}
                 alt=""
                 aria-hidden="true"
+                width={600}
+                height={258}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-24 md:h-28 object-contain opacity-45 brightness-0 invert"
                 style={{ animation: "logoFloat 5s ease-in-out infinite" }}
               />
