@@ -132,7 +132,7 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-8">
             <Link
               to="/"
               className="text-[15px] font-medium text-gray-700 hover:text-primary transition-colors"
@@ -218,6 +218,13 @@ export default function Header() {
             </div>
 
             <Link
+              to="/creator-network"
+              className="text-[15px] font-medium text-gray-700 hover:text-primary transition-colors"
+            >
+              Creator Network
+            </Link>
+
+            <Link
               to="/#case-studies"
               className="text-[15px] font-medium text-gray-700 hover:text-primary transition-colors"
             >
@@ -240,7 +247,7 @@ export default function Header() {
           </nav>
 
           {/* Desktop Proposal Button */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden lg:flex items-center gap-6">
             <Link
               to="/#proposal"
               className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold text-white bg-primary rounded-full hover:bg-primary-dark transition-colors shadow-sm"
@@ -251,7 +258,7 @@ export default function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden z-50 p-2 -mr-2 text-gray-700"
+            className="lg:hidden z-50 p-2 -mr-2 text-gray-700"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -263,7 +270,7 @@ export default function Header() {
       {/* Mobile Navigation */}
       <div
         className={cn(
-          "fixed inset-0 z-40 transition-transform duration-300 ease-in-out md:hidden flex flex-col pt-24 px-6 overflow-y-auto",
+          "fixed inset-0 z-40 transition-transform duration-300 ease-in-out lg:hidden flex flex-col pt-24 px-6 overflow-y-auto",
           mobileMenuOpen ? "translate-x-0" : "translate-x-full",
         )}
         style={{ backgroundColor: "#ffffff" }}
@@ -339,6 +346,14 @@ export default function Header() {
               </div>
             )}
           </div>
+
+          <Link
+            to="/creator-network"
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-xl font-heading font-medium text-secondary"
+          >
+            Creator Network
+          </Link>
 
           <Link
             to="/#case-studies"

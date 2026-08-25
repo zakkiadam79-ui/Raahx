@@ -24,6 +24,9 @@ const AboutPage = lazy(() => import("./pages/AboutPage"));
 const BlogIndex = lazy(() => import("./pages/BlogIndex"));
 const BlogDetail = lazy(() => import("./pages/BlogDetail"));
 const CaseStudyDetail = lazy(() => import("./pages/CaseStudyDetail"));
+const CreatorNetwork = lazy(() => import("./pages/CreatorNetwork"));
+const CreatorDetail = lazy(() => import("./pages/CreatorDetail"));
+const CreatorJoin = lazy(() => import("./pages/CreatorJoin"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 
 function ScrollToHash() {
@@ -102,6 +105,9 @@ export default function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/services/:slug" element={<ServiceDetail />} />
           <Route path="/case-studies/:slug" element={<CaseStudyDetail />} />
+          <Route path="/creator-network" element={<CreatorNetwork />} />
+          <Route path="/creator-network/join" element={<CreatorJoin />} />
+          <Route path="/creator-network/:id" element={<CreatorDetail />} />
           <Route path="/blog" element={<BlogIndex />} />
           <Route path="/blog/:slug" element={<BlogDetail />} />
           <Route path="/proposal" element={<ProposalForm />} />

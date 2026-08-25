@@ -45,6 +45,10 @@ try {
         api_dispatch_case_studies($pdo, $config, $method, array_slice($segments, 1), $body);
     }
 
+    if ($resource === 'creators') {
+        api_dispatch_creators($pdo, $config, $method, array_slice($segments, 1), $body);
+    }
+
     if ($resource === 'subscribers') {
         api_dispatch_subscribers($pdo, $config, $method, array_slice($segments, 1), $body);
     }
@@ -241,6 +245,54 @@ function api_dispatch_case_studies(PDO $pdo, array $config, string $method, arra
     }
 
     throw new ApiException(404, 'NOT_FOUND', 'Case Study endpoint not found.');
+}
+
+function api_dispatch_creators(PDO $pdo, array $config, string $method, array $segments, array $body): void
+{
+    $authenticated = static function () use ($pdo, $config): void {
+        Auth::requireAuthenticated($pdo, $config);
+    };
+
+    if (($segments[0] ?? null) === 'admin') {
+        $authenticated();
+        if (count($segments) === 1 && $method === 'GET') {
+            Http::json(api_creators_list($pdo, $_GET, false));
+        }
+        if (count($segments) === 2 && $method === 'GET') {
+            $id = Validation::id(['id' => $segments[1]]);
+            Http::json(api_creators_find($pdo, $id ?? '', false));
+        }
+        if (count($segments) === 1 || count($segments) === 2) {
+            Http::methodNotAllowed(['GET']);
+        }
+        throw new ApiException(404, 'NOT_FOUND', 'Creator admin endpoint not found.');
+    }
+
+    if (count($segments) === 0) {
+        if ($method === 'GET') Http::json(api_creators_list($pdo, $_GET, true));
+        if ($method === 'POST') {
+            $authenticated();
+            Http::json(api_creators_create($pdo, $body), 201);
+        }
+        Http::methodNotAllowed(['GET', 'POST']);
+    }
+
+    if (count($segments) === 1) {
+        $id = Validation::id(['id' => $segments[0]]);
+        if ($method === 'GET') Http::json(api_creators_find($pdo, $id ?? '', true));
+        if ($method === 'PUT') {
+            $authenticated();
+            Http::json(api_creators_update($pdo, $id ?? '', $body));
+        }
+        if ($method === 'DELETE') {
+            $authenticated();
+            api_creators_delete($pdo, $id ?? '');
+            Http::json(['deleted' => true]);
+        }
+        Http::methodNotAllowed(['GET', 'PUT', 'DELETE']);
+    }
+
+    throw new ApiException(404, 'NOT_FOUND', 'Creator endpoint not found.');
 }
 
 function api_dispatch_subscribers(PDO $pdo, array $config, string $method, array $segments, array $body): void
