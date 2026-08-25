@@ -1,6 +1,10 @@
 import { ArrowUpRight, BadgeCheck, Heart, Instagram, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
-import { formatCreatorCount, type CreatorProfile } from "../../data/creatorsData";
+import {
+  formatCreatorCount,
+  isValidCreatorProfileUrl,
+  type CreatorProfile,
+} from "../../data/creatorsData";
 
 export default function CreatorCard({
   creator,
@@ -13,6 +17,10 @@ export default function CreatorCard({
   onSave: () => void;
   list?: boolean;
 }) {
+  const instagramUrl = creator.socials.find(
+    (social) => social.platform === "Instagram" && isValidCreatorProfileUrl(social.profile_url),
+  )?.profile_url;
+
   return (
     <article className={`group overflow-hidden rounded-2xl border border-gray-100 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${list ? "sm:flex" : ""}`}>
       <div className={`relative overflow-hidden bg-slate-100 ${list ? "h-64 sm:h-auto sm:w-56 shrink-0" : "h-64"}`}>
@@ -48,9 +56,21 @@ export default function CreatorCard({
         </p>
         <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-gray-600">{creator.shortBio}</p>
         <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
-          <span className="flex items-center gap-1.5 text-sm font-semibold text-secondary">
-            <Instagram size={15} className="text-primary" /> {formatCreatorCount(creator.followers)}
-          </span>
+          {instagramUrl ? (
+            <a
+              href={instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${creator.name} on Instagram`}
+              className="flex items-center gap-1.5 rounded-md text-sm font-semibold text-secondary transition-colors hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <Instagram size={15} className="text-primary" /> {formatCreatorCount(creator.followers)}
+            </a>
+          ) : (
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-secondary">
+              <Instagram size={15} className="text-primary" /> {formatCreatorCount(creator.followers)}
+            </span>
+          )}
           <span className="text-xs text-gray-500">{creator.engagement}% engagement</span>
         </div>
         <Link

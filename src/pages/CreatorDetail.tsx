@@ -4,14 +4,33 @@ import {
   BadgeCheck,
   BarChart3,
   Check,
+  Facebook,
   Instagram,
+  Linkedin,
   MapPin,
   MessageCircle,
+  Music2,
   Play,
+  Twitter,
   Users,
+  Youtube,
 } from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import { creators, formatCreatorCount } from "../data/creatorsData";
+import {
+  creators,
+  formatCreatorCount,
+  isValidCreatorProfileUrl,
+  type CreatorPlatform,
+} from "../data/creatorsData";
+
+function SocialIcon({ platform }: { platform: CreatorPlatform }) {
+  if (platform === "Instagram") return <Instagram size={21} />;
+  if (platform === "TikTok") return <Music2 size={21} />;
+  if (platform === "YouTube") return <Youtube size={21} />;
+  if (platform === "Facebook") return <Facebook size={21} />;
+  if (platform === "LinkedIn") return <Linkedin size={21} />;
+  return <Twitter size={21} />;
+}
 
 export default function CreatorDetail() {
   const { id } = useParams();
@@ -75,11 +94,43 @@ export default function CreatorDetail() {
           <aside className="space-y-6">
             <div className="rounded-3xl bg-[#082f2a] p-7 text-white">
               <h2 className="font-heading text-xl font-bold text-white">Social presence</h2>
-              <div className="mt-6 flex items-center gap-4 rounded-2xl bg-white/10 p-4">
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-white text-primary"><Instagram size={21} /></span>
-                <div><p className="text-sm font-bold text-white">Instagram</p><p className="text-xs text-white/60">{creator.handle}</p></div>
+              <div className="mt-6 space-y-3">
+                {creator.socials.map((social) => {
+                  const content = (
+                    <>
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-primary">
+                        <SocialIcon platform={social.platform} />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-bold text-white">{social.platform}</span>
+                        <span className="block truncate text-xs text-white/60">
+                          {social.handle || (social.profile_url ? "View profile" : "Profile link unavailable")}
+                        </span>
+                      </span>
+                    </>
+                  );
+
+                  return isValidCreatorProfileUrl(social.profile_url) ? (
+                    <a
+                      key={social.platform}
+                      href={social.profile_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 rounded-2xl bg-white/10 p-4 transition-colors hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                      aria-label={`Open ${creator.name} on ${social.platform}`}
+                    >
+                      {content}
+                    </a>
+                  ) : (
+                    <div
+                      key={social.platform}
+                      className="flex items-center gap-4 rounded-2xl bg-white/[0.06] p-4 opacity-70"
+                    >
+                      {content}
+                    </div>
+                  );
+                })}
               </div>
-              <p className="mt-5 text-sm leading-relaxed text-white/65">Also active on {creator.platforms.slice(1).join(", ")}.</p>
             </div>
             <div id="collaborate" className="scroll-mt-28 rounded-3xl border border-primary/15 bg-white p-7 shadow-lg">
               <MessageCircle size={25} className="text-primary" />

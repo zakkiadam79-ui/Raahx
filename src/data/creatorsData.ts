@@ -1,4 +1,17 @@
-export type CreatorPlatform = "Instagram" | "TikTok" | "YouTube" | "Facebook";
+export type CreatorPlatform =
+  | "Instagram"
+  | "TikTok"
+  | "YouTube"
+  | "Facebook"
+  | "LinkedIn"
+  | "X"
+  | "Twitter";
+
+export interface CreatorSocialProfile {
+  platform: CreatorPlatform;
+  handle: string | null;
+  profile_url: string | null;
+}
 
 export interface CreatorProfile {
   id: number;
@@ -15,6 +28,7 @@ export interface CreatorProfile {
   compatibility: number;
   handle: string;
   platforms: CreatorPlatform[];
+  socials: CreatorSocialProfile[];
   expertise: string[];
 }
 
@@ -45,7 +59,7 @@ export const creatorCities = [
   "Gilgit",
 ] as const;
 
-export const creators: CreatorProfile[] = [
+const creatorRecords: Array<Omit<CreatorProfile, "socials">> = [
   {
     id: 1,
     name: "Lifestyle of Shehzadi",
@@ -251,6 +265,46 @@ export const creators: CreatorProfile[] = [
     expertise: ["Adventure", "Travel", "Trekking", "Tourism", "Camping"],
   },
 ];
+
+function socialProfiles(handle: string, platforms: CreatorPlatform[]): CreatorSocialProfile[] {
+  const username = handle.replace(/^@/, "").trim();
+
+  return platforms.map((platform) => {
+    if (platform === "Instagram") {
+      return {
+        platform,
+        handle,
+        profile_url: username ? `https://www.instagram.com/${username}/` : null,
+      };
+    }
+    if (platform === "TikTok") {
+      return {
+        platform,
+        handle,
+        profile_url: username ? `https://www.tiktok.com/@${username}` : null,
+      };
+    }
+
+    // The approved static data does not include canonical channel/page URLs for
+    // these platforms. Keep them visible but non-clickable rather than guessing.
+    return { platform, handle: null, profile_url: null };
+  });
+}
+
+export const creators: CreatorProfile[] = creatorRecords.map((creator) => ({
+  ...creator,
+  socials: socialProfiles(creator.handle, creator.platforms),
+}));
+
+export function isValidCreatorProfileUrl(value: string | null | undefined): value is string {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
 
 export function formatCreatorCount(count: number) {
   if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1).replace(".0", "")}M`;
