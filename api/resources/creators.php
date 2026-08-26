@@ -67,11 +67,12 @@ function api_creator_row(PDO $pdo, string $id): array
 function api_creator_with_children(PDO $pdo, array $row, bool $includePrivate): array
 {
     $id = (string) $row['id'];
-    $socials = api_creator_child_rows($pdo, 'creator_socials', $id, 'platform, handle, profile_url, follower_count, display_order');
+    $socials = api_creator_child_rows($pdo, 'creator_socials', $id, 'platform, handle, profile_url, follower_count, follower_count_updated_at, display_order');
     $categories = api_creator_child_rows($pdo, 'creator_categories', $id, 'category, display_order');
     $expertise = api_creator_child_rows($pdo, 'creator_expertise', $id, 'expertise, display_order');
     $collaborations = api_creator_child_rows($pdo, 'creator_collaboration_types', $id, 'collaboration_type, display_order');
     $work = api_creator_child_rows($pdo, 'creator_featured_work', $id, 'title, work_url, platform, thumbnail_url, display_order');
+    $brandLove = api_creator_child_rows($pdo, 'creator_brand_love_points', $id, 'heading, detail, icon_key, display_order');
     $result = [
         'id' => $id,
         'display_name' => $row['display_name'],
@@ -93,7 +94,7 @@ function api_creator_with_children(PDO $pdo, array $row, bool $includePrivate): 
         'approved_at' => $row['approved_at'],
         'socials' => array_map(static fn (array $item): array => [
             'platform' => $item['platform'], 'handle' => $item['handle'], 'profile_url' => $item['profile_url'],
-            'follower_count' => (int) $item['follower_count'], 'display_order' => (int) $item['display_order'],
+            'follower_count' => (int) $item['follower_count'], 'follower_count_updated_at' => $item['follower_count_updated_at'], 'display_order' => (int) $item['display_order'],
         ], $socials),
         'categories' => array_column($categories, 'category'),
         'expertise' => array_column($expertise, 'expertise'),
@@ -102,6 +103,10 @@ function api_creator_with_children(PDO $pdo, array $row, bool $includePrivate): 
             'title' => $item['title'], 'work_url' => $item['work_url'], 'platform' => $item['platform'],
             'thumbnail_url' => $item['thumbnail_url'], 'display_order' => (int) $item['display_order'],
         ], $work),
+        'brand_love_points' => array_map(static fn (array $item): array => [
+            'heading'=>$item['heading'], 'detail'=>$item['detail'], 'icon_key'=>$item['icon_key'],
+            'display_order'=>(int) $item['display_order'],
+        ], $brandLove),
         'created_at' => $row['created_at'],
         'updated_at' => $row['updated_at'],
     ];
@@ -116,7 +121,7 @@ function api_creator_with_children(PDO $pdo, array $row, bool $includePrivate): 
 
 function api_creator_child_rows(PDO $pdo, string $table, string $creatorId, string $columns): array
 {
-    $allowed = ['creator_socials', 'creator_categories', 'creator_expertise', 'creator_collaboration_types', 'creator_featured_work'];
+    $allowed = ['creator_socials', 'creator_categories', 'creator_expertise', 'creator_collaboration_types', 'creator_featured_work', 'creator_brand_love_points'];
     if (!in_array($table, $allowed, true)) throw new LogicException('Invalid Creator child table.');
     $statement = $pdo->prepare(sprintf('SELECT %s FROM %s WHERE creator_id = :creator_id ORDER BY display_order ASC, id ASC', $columns, $table));
     $statement->execute(['creator_id' => $creatorId]);
@@ -162,7 +167,7 @@ function api_creators_update(PDO $pdo, string $id, array $input): array
 function api_creators_self_update(PDO $pdo, string $id, array $input): array
 {
     $existing = api_creators_find($pdo, $id, false);
-    $allowed = ['display_name', 'email', 'whatsapp', 'profile_image_url', 'portfolio_url', 'short_bio', 'about', 'city', 'region', 'socials', 'categories', 'expertise', 'collaboration_types', 'featured_work'];
+    $allowed = ['display_name', 'email', 'whatsapp', 'profile_image_url', 'portfolio_url', 'short_bio', 'about', 'city', 'region', 'socials', 'categories', 'expertise', 'collaboration_types', 'featured_work', 'brand_love_points'];
     $safe = array_intersect_key($input, array_flip($allowed));
     $payload = api_creator_payload($safe, $existing, false);
     api_creator_assert_email_available($pdo, $payload['email'], $id);
@@ -218,6 +223,7 @@ function api_creator_payload(array $input, ?array $existing = null, bool $adminC
         'expertise' => api_creator_string_list($source['expertise'] ?? [], 'expertise'),
         'collaboration_types' => api_creator_string_list($source['collaboration_types'] ?? [], 'collaboration_types'),
         'featured_work' => api_creator_featured_work($source['featured_work'] ?? []),
+        'brand_love_points' => api_creator_brand_love_points($source['brand_love_points'] ?? []),
     ];
 }
 
@@ -248,7 +254,7 @@ function api_creator_featured_work(mixed $value): array
             'title' => Validation::string($item, 'title', true, 255),
             'work_url' => api_creator_required_url($item, 'work_url'),
             'platform' => Validation::nullableString($item, 'platform', 100),
-            'thumbnail_url' => Validation::url($item, 'thumbnail_url'),
+            'thumbnail_url' => Validation::url($item, 'thumbnail_url', true),
             'display_order' => api_creator_unsigned_integer($item, 'display_order', $index),
         ];
     }
@@ -388,7 +394,7 @@ function api_creator_parent_parameters(array $payload): array
 
 function api_creators_replace_children(PDO $pdo, string $creatorId, array $payload): void
 {
-    foreach (['creator_socials', 'creator_categories', 'creator_expertise', 'creator_collaboration_types', 'creator_featured_work'] as $table) {
+    foreach (['creator_socials', 'creator_categories', 'creator_expertise', 'creator_collaboration_types', 'creator_featured_work', 'creator_brand_love_points'] as $table) {
         $delete = $pdo->prepare(sprintf('DELETE FROM %s WHERE creator_id = :creator_id', $table));
         $delete->execute(['creator_id' => $creatorId]);
     }
@@ -397,6 +403,7 @@ function api_creators_replace_children(PDO $pdo, string $creatorId, array $paylo
     api_creator_insert_values($pdo, 'creator_expertise', 'expertise', $creatorId, $payload['expertise']);
     api_creator_insert_values($pdo, 'creator_collaboration_types', 'collaboration_type', $creatorId, $payload['collaboration_types']);
     api_creator_insert_rows($pdo, 'creator_featured_work', $creatorId, $payload['featured_work']);
+    api_creator_insert_rows($pdo, 'creator_brand_love_points', $creatorId, $payload['brand_love_points']);
     api_creator_recalculate_followers($pdo, $creatorId);
 }
 
@@ -406,6 +413,8 @@ function api_creator_insert_rows(PDO $pdo, string $table, string $creatorId, arr
         $statement = $pdo->prepare('INSERT INTO creator_socials (creator_id, platform, handle, profile_url, follower_count, display_order) VALUES (:creator_id,:platform,:handle,:profile_url,:follower_count,:display_order)');
     } elseif ($table === 'creator_featured_work') {
         $statement = $pdo->prepare('INSERT INTO creator_featured_work (creator_id, title, work_url, platform, thumbnail_url, display_order) VALUES (:creator_id,:title,:work_url,:platform,:thumbnail_url,:display_order)');
+    } elseif ($table === 'creator_brand_love_points') {
+        $statement = $pdo->prepare('INSERT INTO creator_brand_love_points (creator_id, heading, detail, icon_key, display_order) VALUES (:creator_id,:heading,:detail,:icon_key,:display_order)');
     } else throw new LogicException('Invalid Creator row table.');
     foreach ($rows as $row) $statement->execute(array_merge(['creator_id' => $creatorId], $row));
 }

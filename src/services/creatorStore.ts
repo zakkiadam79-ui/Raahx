@@ -5,6 +5,7 @@ export interface CreatorSocialRecord {
   handle: string | null;
   profile_url: string;
   follower_count: number;
+  follower_count_updated_at?: string;
   display_order: number;
 }
 
@@ -13,6 +14,13 @@ export interface CreatorFeaturedWork {
   work_url: string;
   platform: string | null;
   thumbnail_url: string | null;
+  display_order: number;
+}
+
+export interface CreatorBrandLovePoint {
+  heading: string;
+  detail: string;
+  icon_key: string;
   display_order: number;
 }
 
@@ -44,6 +52,7 @@ export interface CreatorRecord {
   expertise: string[];
   collaboration_types: string[];
   featured_work: CreatorFeaturedWork[];
+  brand_love_points: CreatorBrandLovePoint[];
   created_at?: string;
   updated_at?: string;
 }
@@ -71,11 +80,12 @@ export interface CreatorInput {
   expertise: string[];
   collaboration_types: string[];
   featured_work: CreatorFeaturedWork[];
+  brand_love_points: CreatorBrandLovePoint[];
 }
 
 export type CreatorSelfInput = Pick<CreatorInput,
   "display_name" | "email" | "whatsapp" | "profile_image_url" | "portfolio_url" | "short_bio" | "about" |
-  "city" | "region" | "socials" | "categories" | "expertise" | "collaboration_types" | "featured_work"
+  "city" | "region" | "socials" | "categories" | "expertise" | "collaboration_types" | "featured_work" | "brand_love_points"
 >;
 
 export interface CreatorApplicationInput extends CreatorSelfInput {
@@ -100,6 +110,7 @@ export interface CreatorApplication {
     expertise: string[];
     collaboration_types: string[];
     featured_work: CreatorFeaturedWork[];
+  brand_love_points: CreatorBrandLovePoint[];
   };
   status: "pending" | "approved" | "rejected";
   admin_notes: string | null;
@@ -139,24 +150,39 @@ export class CreatorApiError extends Error {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   let response: Response;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 15000);
+  const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
   try {
     response = await fetch(serviceApiUrl(path), {
       ...init,
       credentials: "include",
-      headers: { Accept: "application/json", ...(init.body ? { "Content-Type": "application/json" } : {}), ...init.headers },
+      signal: controller.signal,
+      headers: { Accept: "application/json", ...(init.body && !isFormData ? { "Content-Type": "application/json" } : {}), ...init.headers },
     });
-  } catch {
-    throw new CreatorApiError(0, "NETWORK_ERROR", "The Creator API could not be reached.");
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw new CreatorApiError(0, "TIMEOUT", "The Creator API took too long to respond. Please retry.");
+    throw new CreatorApiError(0, "NETWORK_ERROR", "The Creator API connection failed. Check your connection and retry.");
+  } finally {
+    window.clearTimeout(timeout);
   }
   const contentType = response.headers.get("content-type") ?? "";
   const payload = await response.json().catch(() => null) as { success?: boolean; data?: T; error?: { code?: string; message?: string } } | null;
   if (!payload || typeof payload !== "object") {
+    const httpMessage = response.status === 401 ? "Creator API authentication is required."
+      : response.status === 403 ? "Creator API access is forbidden."
+      : response.status === 404 ? "The requested Creator API endpoint was not found."
+      : response.status === 429 ? "Too many Creator requests were sent. Please wait and retry."
+      : response.status === 500 ? "The Creator API server returned an invalid error response."
+      : response.status === 502 ? "The Creator API gateway is temporarily unavailable."
+      : response.status === 503 ? "The Creator API is temporarily unavailable. Please retry shortly."
+      : null;
     throw new CreatorApiError(
       response.status,
-      "INVALID_API_RESPONSE",
-      contentType.includes("text/html")
+      httpMessage ? `HTTP_${response.status}` : "INVALID_API_RESPONSE",
+      httpMessage ?? (contentType.includes("text/html")
         ? "The Creator API returned the website HTML instead of JSON. Check the /api server routing."
-        : "The Creator API returned an invalid non-JSON response.",
+        : "The Creator API returned an invalid non-JSON response."),
     );
   }
   if (!response.ok || payload.success !== true) {
@@ -164,9 +190,15 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       ? "Creator API authentication is required."
       : response.status === 404
         ? "The requested Creator API endpoint was not found."
-        : response.status >= 500
-          ? "The Creator API reported a server error."
-          : "The Creator API returned an error.";
+        : response.status === 429
+          ? "Too many Creator requests were sent. Please wait and retry."
+          : response.status === 502
+            ? "The Creator API gateway is temporarily unavailable."
+            : response.status === 503
+              ? "The Creator API is temporarily unavailable. Please retry shortly."
+              : response.status >= 500
+                ? "The Creator API reported a server error."
+                : "The Creator API returned an error.";
     throw new CreatorApiError(response.status, payload.error?.code ?? "API_ERROR", payload.error?.message ?? fallback);
   }
   return payload.data as T;

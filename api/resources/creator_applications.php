@@ -8,6 +8,7 @@ function api_creator_application_payload(array $input): array
     $expertise = api_creator_string_list($input['expertise'] ?? [], 'expertise');
     $collaborations = api_creator_string_list($input['collaboration_types'] ?? [], 'collaboration_types');
     $work = api_creator_featured_work($input['featured_work'] ?? []);
+    $brandLove = api_creator_brand_love_points($input['brand_love_points'] ?? []);
     return [
         'full_name'=>Validation::string($input, 'full_name', true, 255),
         'display_name'=>Validation::string($input, 'display_name', true, 255),
@@ -21,7 +22,7 @@ function api_creator_application_payload(array $input): array
         'region'=>Validation::nullableString($input, 'region', 191),
         'submitted_payload'=>[
             'socials'=>$socials, 'categories'=>$categories, 'expertise'=>$expertise,
-            'collaboration_types'=>$collaborations, 'featured_work'=>$work,
+            'collaboration_types'=>$collaborations, 'featured_work'=>$work, 'brand_love_points'=>$brandLove,
         ],
     ];
 }

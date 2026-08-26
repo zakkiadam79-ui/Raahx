@@ -1,93 +1,58 @@
-import { useState } from "react";
-import { HelpCircle, Info, Plus, Trash2 } from "lucide-react";
-import type { CreatorFeaturedWork, CreatorSocialRecord } from "../../services/creatorStore";
+import { useRef, useState } from "react";
+import { HelpCircle, Info, MoveDown, MoveUp, Plus, Trash2, Upload } from "lucide-react";
+import type { CreatorBrandLovePoint, CreatorFeaturedWork, CreatorSocialRecord } from "../../services/creatorStore";
+import { uploadCreatorImage, validateCreatorImageFile, type CreatorUploadMode } from "../../services/creatorMedia";
+import { CREATOR_BRAND_ICONS } from "../../utils/creatorBrandIcons";
 
 export interface EditableCreatorFields {
-  full_name?: string;
-  display_name: string;
-  email: string;
-  whatsapp: string | null;
-  profile_image_url: string | null;
-  portfolio_url: string | null;
-  short_bio: string | null;
-  about: string | null;
-  city: string | null;
-  region: string | null;
-  socials: CreatorSocialRecord[];
-  categories: string[];
-  expertise: string[];
-  collaboration_types: string[];
-  featured_work: CreatorFeaturedWork[];
+  full_name?: string; display_name: string; email: string; whatsapp: string | null;
+  profile_image_url: string | null; portfolio_url: string | null; short_bio: string | null; about: string | null;
+  city: string | null; region: string | null; socials: CreatorSocialRecord[]; categories: string[]; expertise: string[];
+  collaboration_types: string[]; featured_work: CreatorFeaturedWork[]; brand_love_points: CreatorBrandLovePoint[];
 }
+const input="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10";
+const emptySocial=(i:number):CreatorSocialRecord=>({platform:"",handle:"",profile_url:"",follower_count:0,display_order:i});
+const emptyWork=(i:number):CreatorFeaturedWork=>({title:"",work_url:"",platform:"",thumbnail_url:null,display_order:i});
+const emptyLove=(i:number):CreatorBrandLovePoint=>({heading:"",detail:"",icon_key:"sparkles",display_order:i});
 
-const input = "mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10";
-const emptySocial = (index: number): CreatorSocialRecord => ({ platform: "", handle: "", profile_url: "", follower_count: 0, display_order: index });
-const emptyWork = (index: number): CreatorFeaturedWork => ({ title: "", work_url: "", platform: "", thumbnail_url: null, display_order: index });
+export default function CreatorEditableFields<T extends EditableCreatorFields>({value,onChange,showFullName=false,uploadMode,accessToken=""}:{value:T;onChange:(v:T)=>void;showFullName?:boolean;uploadMode:CreatorUploadMode;accessToken?:string}){
+ const [imageHelpOpen,setImageHelpOpen]=useState(false); const [uploading,setUploading]=useState(""); const [uploadError,setUploadError]=useState(""); const profileInput=useRef<HTMLInputElement>(null);
+ const set=<K extends keyof T>(key:K,next:T[K])=>onChange({...value,[key]:next});
+ const upload=async(file:File,apply:(url:string)=>void,label:string)=>{const invalid=validateCreatorImageFile(file);if(invalid){setUploadError(invalid);return;}setUploadError("");setUploading(label);try{apply(await uploadCreatorImage(file,uploadMode,accessToken));}catch(error){setUploadError(error instanceof Error?error.message:"Image upload failed.");}finally{setUploading("");}};
+ const moveLove=(index:number,direction:-1|1)=>{const target=index+direction;if(target<0||target>=value.brand_love_points.length)return;const next=[...value.brand_love_points];[next[index],next[target]]=[next[target],next[index]];set("brand_love_points",next.map((p,i)=>({...p,display_order:i})) as T["brand_love_points"]);};
+ return <div className="space-y-8">
+  <FormSection title="Basic Information"><div className="grid gap-5 md:grid-cols-2">
+   {showFullName&&<Field label="Full Name *" hint="Legal name used for review."><input required value={value.full_name||""} onChange={e=>set("full_name" as keyof T,e.target.value as T[keyof T])} className={input}/></Field>}
+   <Field label="Creator Display Name *"><input required value={value.display_name} onChange={e=>set("display_name",e.target.value as T["display_name"])} className={input}/></Field>
+   <Field label="Email *" hint="Used for Creator communication and secure access."><input required type="email" value={value.email} onChange={e=>set("email",e.target.value as T["email"])} className={input}/></Field>
+   <Field label="WhatsApp"><input value={value.whatsapp||""} onChange={e=>set("whatsapp",(e.target.value||null) as T["whatsapp"])} placeholder="+92..." className={input}/></Field>
+   <Field label="City"><input value={value.city||""} onChange={e=>set("city",(e.target.value||null) as T["city"])} className={input}/></Field>
+   <Field label="Region / Country"><input value={value.region||""} onChange={e=>set("region",(e.target.value||null) as T["region"])} className={input}/></Field>
+  </div>
+  <div className="rounded-2xl border border-primary/15 bg-teal-50/50 p-5"><div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+   <img src={value.profile_image_url||"/logo.png"} alt="Profile preview" className="h-28 w-28 rounded-2xl border-2 border-white object-cover shadow" onError={e=>{e.currentTarget.src="/logo.png";}}/>
+   <div className="flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-secondary">Profile Photo</h3><button type="button" onClick={()=>setImageHelpOpen(v=>!v)} className="inline-flex items-center gap-1 rounded-full border border-primary/25 px-3 py-1 text-xs font-bold text-primary"><HelpCircle size={13}/> Help</button></div><p className="mt-1 text-xs text-gray-500">JPEG, PNG, or WebP. Maximum 5 MB.</p><input ref={profileInput} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload profile photo" onChange={e=>{const file=e.target.files?.[0];if(file)void upload(file,url=>set("profile_image_url",url as T["profile_image_url"]),"profile");e.target.value="";}}/><button type="button" disabled={uploading!==""} onClick={()=>profileInput.current?.click()} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white focus:ring-4 focus:ring-primary/25"><Upload size={16}/>{uploading==="profile"?"Uploading...":value.profile_image_url?"Replace Profile Photo":"Upload Profile Photo"}</button></div>
+  </div>{imageHelpOpen&&<p role="note" className="mt-4 rounded-xl bg-white p-3 text-sm text-gray-600">Choose a photo directly from your device. It is validated and stored with a generated filename. You can optionally use a public image URL below.</p>}<details className="mt-4"><summary className="cursor-pointer text-xs font-semibold text-primary">Use image URL instead</summary><input type="url" value={value.profile_image_url||""} onChange={e=>set("profile_image_url",(e.target.value||null) as T["profile_image_url"])} className={input} placeholder="https://..."/></details>{uploadError&&<p role="alert" className="mt-3 text-sm text-red-600">{uploadError}</p>}</div>
+  <Field label="Portfolio URL" hint="One main portfolio or professional website, separate from Featured Work."><input type="url" value={value.portfolio_url||""} onChange={e=>set("portfolio_url",(e.target.value||null) as T["portfolio_url"])} className={input}/></Field>
+  <Field label="Short Bio" hint="Appears in the profile hero."><textarea rows={3} value={value.short_bio||""} onChange={e=>set("short_bio",(e.target.value||null) as T["short_bio"])} className={input}/></Field>
+  <Field label="Full Bio / About"><textarea rows={6} value={value.about||""} onChange={e=>set("about",(e.target.value||null) as T["about"])} className={input}/></Field></FormSection>
 
-export default function CreatorEditableFields<T extends EditableCreatorFields>({ value, onChange, showFullName = false }: { value: T; onChange: (value: T) => void; showFullName?: boolean }) {
-  const [imageHelpOpen, setImageHelpOpen] = useState(false);
-  const set = <K extends keyof T>(key: K, next: T[K]) => onChange({ ...value, [key]: next });
-  return <div className="space-y-8">
-    <FormSection title="Basic Information">
-      <div className="grid gap-5 md:grid-cols-2">
-        {showFullName && <Field label="Full Name *" hint="Your legal/full name used for the application."><input required value={value.full_name || ""} onChange={(e) => set("full_name" as keyof T, e.target.value as T[keyof T])} placeholder="Your full legal name" className={input} /></Field>}
-        <Field label="Creator Display Name *" hint="The public name shown on your Creator profile."><input required value={value.display_name} onChange={(e) => set("display_name", e.target.value as T["display_name"])} placeholder="Your creator or channel name" className={input} /></Field>
-        <Field label="Email *" hint="Required for Creator communication and secure profile access."><input required type="email" value={value.email} onChange={(e) => set("email", e.target.value as T["email"])} placeholder="creator@example.com" className={input} /></Field>
-        <Field label="WhatsApp" hint="Include your country code."><input value={value.whatsapp || ""} onChange={(e) => set("whatsapp", (e.target.value || null) as T["whatsapp"])} placeholder="+92 300 0000000" className={input} /></Field>
-        <Field label="City" hint="Free text: Lahore, Dubai, London, New York, or any city."><input value={value.city || ""} onChange={(e) => set("city", (e.target.value || null) as T["city"])} placeholder="Your city" className={input} /></Field>
-        <Field label="Region / Country"><input value={value.region || ""} onChange={(e) => set("region", (e.target.value || null) as T["region"])} placeholder="Punjab, Pakistan" className={input} /></Field>
-      </div>
-      <div>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <label htmlFor="creator-profile-image-url" className="text-sm font-semibold text-gray-700">Profile Image URL</label>
-          <button
-            type="button"
-            onClick={() => setImageHelpOpen((open) => !open)}
-            aria-expanded={imageHelpOpen}
-            aria-controls="creator-profile-image-help"
-            className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-teal-50 px-3 py-1.5 text-xs font-bold text-primary transition hover:bg-teal-100"
-          >
-            <HelpCircle size={14} /> Help
-          </button>
-        </div>
-        <input id="creator-profile-image-url" type="url" value={value.profile_image_url || ""} onChange={(e) => set("profile_image_url", (e.target.value || null) as T["profile_image_url"])} placeholder="https://example.com/public-photo.jpg" className={input} />
-        <p className="mt-1 text-xs leading-relaxed text-gray-500">Paste a publicly accessible HTTP/HTTPS image URL. Image uploads are not used.</p>
-        {imageHelpOpen && (
-          <div id="creator-profile-image-help" role="note" className="mt-3 rounded-xl border border-teal-100 bg-teal-50 p-4 text-sm leading-relaxed text-teal-950">
-            <p className="font-semibold text-primary">How to add your profile photo</p>
-            <p className="mt-1">Upload your profile photo to Google Drive or another publicly accessible image location. Make sure anyone with the shared link can view it, then paste the public image URL here. The link must be publicly accessible and point to the image.</p>
-          </div>
-        )}
-      </div>
-      <Field label="Portfolio URL" hint="Enter your main portfolio, website, or professional work page. This is one URL and is separate from Featured Work."><input type="url" value={value.portfolio_url || ""} onChange={(e) => set("portfolio_url", (e.target.value || null) as T["portfolio_url"])} placeholder="https://your-portfolio.example" className={input} /></Field>
-      <Field label="Short Bio" hint="Appears under your name and categories in the profile hero."><textarea rows={3} value={value.short_bio || ""} onChange={(e) => set("short_bio", (e.target.value || null) as T["short_bio"])} placeholder="A short introduction to your content and audience." className={input} /></Field>
-      <Field label="Full Bio / About" hint="Appears in the About the Creator section."><textarea rows={6} value={value.about || ""} onChange={(e) => set("about", (e.target.value || null) as T["about"])} placeholder="Tell brands about your work, audience, style, and experience." className={input} /></Field>
-    </FormSection>
+  <FormSection title="Categories"><StringRepeater values={value.categories} placeholder="e.g. Travel" addLabel="Add another category" onChange={v=>set("categories",v as T["categories"])}/></FormSection>
+  <FormSection title="Social Media Accounts" hint="Counts are summed by the API. Update them from official dashboards when platform API access is unavailable."><div className="space-y-4">{value.socials.map((s,i)=><div key={i} className="grid gap-3 rounded-2xl bg-slate-50 p-4 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1.5fr_.8fr_auto] lg:items-end"><Field label="Platform"><input required value={s.platform} onChange={e=>updateSocial(i,{platform:e.target.value})} className={input}/></Field><Field label="Handle"><input value={s.handle||""} onChange={e=>updateSocial(i,{handle:e.target.value||null})} className={input}/></Field><Field label="Exact Profile URL"><input required type="url" value={s.profile_url} onChange={e=>updateSocial(i,{profile_url:e.target.value})} className={input}/></Field><Field label="Followers"><input min="0" type="number" value={s.follower_count} onChange={e=>updateSocial(i,{follower_count:Number(e.target.value)||0})} className={input}/></Field><Remove onClick={()=>set("socials",(value.socials.length===1?[emptySocial(0)]:value.socials.filter((_,x)=>x!==i).map((x,n)=>({...x,display_order:n}))) as T["socials"])}/></div>)}</div><Add onClick={()=>set("socials",[...value.socials,emptySocial(value.socials.length)] as T["socials"])} label="Add another social account"/></FormSection>
+  <FormSection title="Expertise"><StringRepeater values={value.expertise} placeholder="e.g. Photography" addLabel="Add another expertise" onChange={v=>set("expertise",v as T["expertise"])}/></FormSection>
+  <FormSection title="Available For"><StringRepeater values={value.collaboration_types} placeholder="e.g. Brand Campaigns" addLabel="Add another collaboration type" onChange={v=>set("collaboration_types",v as T["collaboration_types"])}/></FormSection>
 
-    <FormSection title="Categories"><StringRepeater values={value.categories} placeholder="e.g. Travel" addLabel="Add another category" onChange={(next) => set("categories", next as T["categories"])} /></FormSection>
+  <FormSection title="Featured Work" hint="Exact work URLs remain clickable. YouTube/Dailymotion resolve safe covers; upload an optional cover for other platforms."><div className="space-y-4">{value.featured_work.map((w,i)=><div key={i} className="rounded-2xl bg-slate-50 p-4"><div className="grid gap-3 md:grid-cols-3"><Field label="Title"><input required value={w.title} onChange={e=>updateWork(i,{title:e.target.value})} className={input}/></Field><Field label="Work / Video URL"><input required type="url" value={w.work_url} onChange={e=>updateWork(i,{work_url:e.target.value})} className={input}/></Field><Field label="Platform"><input value={w.platform||""} onChange={e=>updateWork(i,{platform:e.target.value||null})} className={input}/></Field></div><div className="mt-3 flex flex-wrap items-center gap-3"><label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-primary/20 bg-white px-3 py-2 text-xs font-bold text-primary"><Upload size={14}/>{uploading===`work-${i}`?"Uploading...":"Upload Optional Cover"}<input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{const file=e.target.files?.[0];if(file)void upload(file,url=>updateWork(i,{thumbnail_url:url}),`work-${i}`);e.target.value="";}}/></label>{w.thumbnail_url&&<img src={w.thumbnail_url} alt="Cover preview" className="h-14 w-20 rounded-lg object-cover"/>}<Remove onClick={()=>set("featured_work",value.featured_work.filter((_,x)=>x!==i).map((x,n)=>({...x,display_order:n})) as T["featured_work"])}/></div></div>)}</div><Add onClick={()=>set("featured_work",[...value.featured_work,emptyWork(value.featured_work.length)] as T["featured_work"])} label="Add another work"/></FormSection>
 
-    <FormSection title="Social Media Accounts" hint="Add every account you want shown. Profile URL must be the exact public destination.">
-      <div className="space-y-4">{value.socials.map((social, index) => <div key={index} className="grid gap-3 rounded-2xl border border-gray-100 bg-slate-50 p-4 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1.5fr_0.8fr_auto] lg:items-end"><Field label="Platform"><input required value={social.platform} onChange={(e) => updateSocial(index, { platform: e.target.value })} placeholder="Instagram, YouTube, Other" className={input} /></Field><Field label="Username / Handle"><input value={social.handle || ""} onChange={(e) => updateSocial(index, { handle: e.target.value || null })} placeholder="@username" className={input} /></Field><Field label="Profile URL *" hint="Exact clickable profile URL."><input required type="url" value={social.profile_url} onChange={(e) => updateSocial(index, { profile_url: e.target.value })} placeholder="https://" className={input} /></Field><Field label="Followers" hint="Used to calculate your total."><input type="number" min="0" value={social.follower_count} onChange={(e) => updateSocial(index, { follower_count: Number(e.target.value) || 0 })} className={input} /></Field><Remove onClick={() => set("socials", (value.socials.length === 1 ? [emptySocial(0)] : value.socials.filter((_, i) => i !== index).map((item, i) => ({ ...item, display_order: i }))) as T["socials"])} label="Remove social account" /></div>)}</div>
-      <Add onClick={() => set("socials", [...value.socials, emptySocial(value.socials.length)] as T["socials"])} label="Add another social media account" />
-    </FormSection>
-
-    <FormSection title="Expertise"><StringRepeater values={value.expertise} placeholder="e.g. Photography" addLabel="Add another expertise" onChange={(next) => set("expertise", next as T["expertise"])} /></FormSection>
-    <FormSection title="Available For / Collaboration Types"><StringRepeater values={value.collaboration_types} placeholder="e.g. Reels & Short Videos" addLabel="Add another collaboration type" onChange={(next) => set("collaboration_types", next as T["collaboration_types"])} /></FormSection>
-
-    <FormSection title="Featured Work / Portfolio" hint="Paste links to public work or videos. Supported YouTube links receive a safe platform thumbnail automatically; other platforms use the RaahX fallback image when no thumbnail is available. Your exact work URL is never changed.">
-      <div className="space-y-4">{value.featured_work.map((work, index) => <div key={index} className="grid gap-3 rounded-2xl border border-gray-100 bg-slate-50 p-4 md:grid-cols-[1fr_1.5fr_1fr_auto] md:items-end"><Field label="Title"><input required value={work.title} onChange={(e) => updateWork(index, { title: e.target.value })} placeholder="Campaign or video title" className={input} /></Field><Field label="Work / Video URL"><input required type="url" value={work.work_url} onChange={(e) => updateWork(index, { work_url: e.target.value })} placeholder="https://" className={input} /></Field><Field label="Platform"><input value={work.platform || ""} onChange={(e) => updateWork(index, { platform: e.target.value || null })} placeholder="YouTube, TikTok, Other" className={input} /></Field><Remove onClick={() => set("featured_work", (value.featured_work.length === 1 ? [emptyWork(0)] : value.featured_work.filter((_, i) => i !== index).map((item, i) => ({ ...item, display_order: i }))) as T["featured_work"])} label="Remove work" /></div>)}</div>
-      <Add onClick={() => set("featured_work", [...value.featured_work, emptyWork(value.featured_work.length)] as T["featured_work"])} label="Add another work" />
-    </FormSection>
-  </div>;
-
-  function updateSocial(index: number, changes: Partial<CreatorSocialRecord>) { set("socials", value.socials.map((item, i) => i === index ? { ...item, ...changes } : item) as T["socials"]); }
-  function updateWork(index: number, changes: Partial<CreatorFeaturedWork>) { set("featured_work", value.featured_work.map((item, i) => i === index ? { ...item, ...changes } : item) as T["featured_work"]); }
+  <FormSection title="Why Brands Love Working With This Creator" hint="Add up to four genuine points. Choose only from approved icons."><div className="space-y-4">{value.brand_love_points.map((p,i)=>{const Selected=CREATOR_BRAND_ICONS.find(x=>x.key===p.icon_key)?.icon;return <div key={i} className="rounded-2xl border border-primary/10 bg-slate-50 p-4"><div className="grid gap-4 md:grid-cols-[1fr_1.5fr]"><Field label="Heading"><input required value={p.heading} onChange={e=>updateLove(i,{heading:e.target.value})} className={input}/></Field><Field label="Detail"><textarea required rows={3} value={p.detail} onChange={e=>updateLove(i,{detail:e.target.value})} className={input}/></Field></div><fieldset className="mt-4"><legend className="text-sm font-semibold">Icon</legend><div className="mt-2 grid grid-cols-6 gap-2 sm:grid-cols-9">{CREATOR_BRAND_ICONS.map(item=><button key={item.key} type="button" aria-label={`Select ${item.label} icon`} aria-pressed={p.icon_key===item.key} title={item.label} onClick={()=>updateLove(i,{icon_key:item.key})} className={`grid aspect-square place-items-center rounded-lg border focus:ring-2 focus:ring-primary ${p.icon_key===item.key?"border-primary bg-primary text-white":"border-gray-200 bg-white text-gray-600"}`}><item.icon size={18}/></button>)}</div></fieldset><div className="mt-3 flex items-center justify-between"><span className="inline-flex items-center gap-2 text-xs text-gray-500">{Selected&&<Selected size={16}/>} Position {i+1}</span><div className="flex gap-1"><button type="button" onClick={()=>moveLove(i,-1)} disabled={i===0} aria-label="Move point up" className="p-2 disabled:opacity-30"><MoveUp size={16}/></button><button type="button" onClick={()=>moveLove(i,1)} disabled={i===value.brand_love_points.length-1} aria-label="Move point down" className="p-2 disabled:opacity-30"><MoveDown size={16}/></button><Remove onClick={()=>set("brand_love_points",value.brand_love_points.filter((_,x)=>x!==i).map((x,n)=>({...x,display_order:n})) as T["brand_love_points"])}/></div></div></div>})}</div>{value.brand_love_points.length<4&&<Add onClick={()=>set("brand_love_points",[...value.brand_love_points,emptyLove(value.brand_love_points.length)] as T["brand_love_points"])} label="Add brand-love point"/>}</FormSection>
+ </div>;
+ function updateSocial(i:number,c:Partial<CreatorSocialRecord>){set("socials",value.socials.map((x,n)=>n===i?{...x,...c}:x) as T["socials"])}
+ function updateWork(i:number,c:Partial<CreatorFeaturedWork>){set("featured_work",value.featured_work.map((x,n)=>n===i?{...x,...c}:x) as T["featured_work"])}
+ function updateLove(i:number,c:Partial<CreatorBrandLovePoint>){set("brand_love_points",value.brand_love_points.map((x,n)=>n===i?{...x,...c}:x) as T["brand_love_points"])}
 }
-
-function FormSection({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) { return <section className="space-y-5 rounded-2xl border border-gray-100 bg-white p-5 md:p-7"><div><h2 className="font-heading text-lg font-bold text-secondary">{title}</h2>{hint && <p className="mt-1 text-xs leading-relaxed text-gray-500">{hint}</p>}</div>{children}</section>; }
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) { return <label className="block text-sm font-semibold text-gray-700">{label}{hint && <span className="mt-1 flex items-start gap-1 text-xs font-normal leading-relaxed text-gray-500"><Info size={13} className="mt-0.5 shrink-0" />{hint}</span>}{children}</label>; }
-function Add({ onClick, label }: { onClick: () => void; label: string }) { return <button type="button" onClick={onClick} className="inline-flex items-center gap-2 rounded-xl border border-primary/25 px-4 py-2.5 text-sm font-semibold text-primary hover:bg-teal-50"><Plus size={16} /> {label}</button>; }
-function Remove({ onClick, label }: { onClick: () => void; label: string }) { return <button type="button" onClick={onClick} aria-label={label} className="rounded-xl p-3 text-red-500 hover:bg-red-50"><Trash2 size={17} /></button>; }
-function StringRepeater({ values, placeholder, addLabel, onChange }: { values: string[]; placeholder: string; addLabel: string; onChange: (values: string[]) => void }) { return <div className="space-y-3">{values.map((value, index) => <div key={index} className="flex gap-2"><input value={value} onChange={(e) => onChange(values.map((item, i) => i === index ? e.target.value : item))} placeholder={placeholder} className={input} /><Remove onClick={() => onChange(values.length === 1 ? [""] : values.filter((_, i) => i !== index))} label={`Remove ${placeholder}`} /></div>)}<Add onClick={() => onChange([...values, ""])} label={addLabel} /></div>; }
-
-export const emptyEditableProfile = (): EditableCreatorFields => ({ display_name: "", email: "", whatsapp: null, profile_image_url: null, portfolio_url: null, short_bio: null, about: null, city: null, region: null, socials: [{ platform: "", handle: "", profile_url: "", follower_count: 0, display_order: 0 }], categories: [""], expertise: [""], collaboration_types: [""], featured_work: [] });
+function FormSection({title,hint,children}:{title:string;hint?:string;children:React.ReactNode}){return <section className="space-y-5 rounded-2xl border border-gray-100 bg-white p-5 md:p-7"><h2 className="font-heading text-xl font-bold text-secondary"><span className="mr-2 text-primary">/</span>{title}</h2>{hint&&<p className="text-xs text-gray-500">{hint}</p>}{children}</section>}
+function Field({label,hint,children}:{label:string;hint?:string;children:React.ReactNode}){return <label className="block text-sm font-semibold text-gray-700">{label}{hint&&<span className="mt-1 flex gap-1 text-xs font-normal text-gray-500"><Info size={13}/>{hint}</span>}{children}</label>}
+function Add({onClick,label}:{onClick:()=>void;label:string}){return <button type="button" onClick={onClick} className="inline-flex items-center gap-2 rounded-xl border border-primary/25 px-4 py-2.5 text-sm font-bold text-primary hover:bg-teal-50 focus:ring-2 focus:ring-primary"><Plus size={16}/>{label}</button>}
+function Remove({onClick}:{onClick:()=>void}){return <button type="button" onClick={onClick} aria-label="Remove item" className="rounded-xl p-2 text-red-500 hover:bg-red-50 focus:ring-2 focus:ring-red-300"><Trash2 size={17}/></button>}
+function StringRepeater({values,placeholder,addLabel,onChange}:{values:string[];placeholder:string;addLabel:string;onChange:(v:string[])=>void}){return <div className="space-y-3">{values.map((v,i)=><div key={i} className="flex gap-2"><input value={v} onChange={e=>onChange(values.map((x,n)=>n===i?e.target.value:x))} placeholder={placeholder} className={input}/><Remove onClick={()=>onChange(values.length===1?[""]:values.filter((_,n)=>n!==i))}/></div>)}<Add onClick={()=>onChange([...values,""])} label={addLabel}/></div>}
+export const emptyEditableProfile=():EditableCreatorFields=>({display_name:"",email:"",whatsapp:null,profile_image_url:null,portfolio_url:null,short_bio:null,about:null,city:null,region:null,socials:[emptySocial(0)],categories:[""],expertise:[""],collaboration_types:[""],featured_work:[],brand_love_points:[]});

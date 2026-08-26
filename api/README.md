@@ -54,6 +54,7 @@ Public reads:
 
 Public writes:
 
+- `POST /api/creator-media/application` (rate-limited image upload)
 - `POST /api/subscribers`
 - `POST /api/proposals`
 - `POST /api/blog-views/{slug}`
@@ -65,6 +66,8 @@ Authenticated reads/actions:
 
 Authenticated writes:
 
+- `POST /api/creator-media/admin`
+- `POST /api/creator-media/creator` (Creator magic-link token)
 - `POST`, `PUT`, `DELETE /api/services...`
 - `POST`, `PUT`, `DELETE /api/team...`
 - `POST`, `PUT`, `DELETE /api/blogs...`
@@ -92,3 +95,23 @@ before importing. Imports upsert records by preserved IDs inside one
 transaction and do not delete parents missing from the payload.
 
 All responses use `{ "success": true, "data": ... }` or a structured error response.
+
+## Creator media storage
+
+Creator profile and Featured Work cover images are uploaded through the existing
+PHP API and stored under `api/uploads/creator-media/YYYY/MM`. The web-server
+user must have write permission to `api/uploads`, while `api/uploads/.htaccess`
+blocks executable script extensions and directory listing. Only server-verified
+JPEG, PNG, and WebP files up to 5 MB are accepted; generated random filenames
+are used instead of original names.
+
+## Creator follower counts
+
+`creators.followers` is recalculated from all `creator_socials.follower_count`
+values after every Creator profile write. Each social row records
+`follower_count_updated_at`. Manual updates remain available to Creators and
+Admins because Instagram, TikTok, Facebook, and other platforms require
+provider-specific approved applications, credentials, scopes, and sometimes
+business-account permissions. No scraping or unofficial automation is used.
+A scheduled provider refresh must not be enabled until those official API
+credentials and permissions are configured for each provider.

@@ -22,7 +22,9 @@ try {
     }
 
     $pdo = Database::connect($config);
-    $body = in_array($method, ['POST', 'PUT'], true) ? Http::body() : [];
+    $contentType = strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? ''));
+    $expectsJson = str_contains($contentType, 'application/json');
+    $body = in_array($method, ['POST', 'PUT'], true) && $expectsJson ? Http::body() : [];
     $resource = $segments[0];
 
     if ($resource === 'auth') {
@@ -61,6 +63,10 @@ try {
         api_dispatch_creator_collaboration_requests($pdo, $config, $method, array_slice($segments, 1), $body);
     }
 
+    if ($resource === 'creator-media') {
+        api_dispatch_creator_media($pdo, $config, $method, array_slice($segments, 1));
+    }
+
     if ($resource === 'subscribers') {
         api_dispatch_subscribers($pdo, $config, $method, array_slice($segments, 1), $body);
     }
@@ -86,7 +92,7 @@ try {
     Http::error($exception);
 } catch (Throwable $exception) {
     raahx_log_exception($exception);
-    $creatorResources = ['creators', 'creator-applications', 'creator-access', 'creator-collaboration-requests'];
+    $creatorResources = ['creators', 'creator-applications', 'creator-access', 'creator-collaboration-requests', 'creator-media'];
     $sqlState = $exception instanceof PDOException
         ? (string) ($exception->errorInfo[0] ?? $exception->getCode())
         : '';
@@ -376,6 +382,13 @@ function api_dispatch_creator_collaboration_requests(PDO $pdo, array $config, st
     }
     if (count($segments) === 1 || count($segments) === 2) Http::methodNotAllowed(['GET']);
     throw new ApiException(404, 'NOT_FOUND', 'Creator collaboration admin endpoint not found.');
+}
+
+function api_dispatch_creator_media(PDO $pdo, array $config, string $method, array $segments): void
+{
+    if (count($segments) !== 1) throw new ApiException(404, 'NOT_FOUND', 'Creator media endpoint not found.');
+    if ($method !== 'POST') Http::methodNotAllowed(['POST']);
+    Http::json(api_creator_media_upload($pdo, $config, (string) $segments[0], $_POST), 201);
 }
 
 function api_dispatch_subscribers(PDO $pdo, array $config, string $method, array $segments, array $body): void

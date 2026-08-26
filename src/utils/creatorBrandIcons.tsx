@@ -1,0 +1,9 @@
+import { Award, BadgeCheck, BarChart3, Briefcase, CalendarCheck, Camera, Clock, Crown, Eye, Film, Gem, Globe, Handshake, Headphones, Heart, Image, Lightbulb, Megaphone, MessageCircle, Mic, Palette, PenTool, Play, Rocket, Share2, ShieldCheck, Smile, Sparkles, Star, Target, ThumbsUp, TrendingUp, Users, Video, WandSparkles, Zap, type LucideIcon } from "lucide-react";
+
+export const CREATOR_BRAND_ICONS: Array<{ key: string; label: string; icon: LucideIcon }> = [
+  ['camera','Camera',Camera],['video','Video',Video],['heart','Heart',Heart],['users','Community',Users],['lightbulb','Ideas',Lightbulb],['chart','Performance',BarChart3],['megaphone','Marketing',Megaphone],['message-circle','Communication',MessageCircle],['handshake','Collaboration',Handshake],['shield-check','Trust',ShieldCheck],['sparkles','Creativity',Sparkles],['star','Quality',Star],['award','Award',Award],['badge-check','Verified',BadgeCheck],['target','Focus',Target],['trending-up','Growth',TrendingUp],['zap','Energy',Zap],['palette','Design',Palette],['pen-tool','Storytelling',PenTool],['image','Visual Content',Image],['film','Film',Film],['play','Playback',Play],['mic','Voice',Mic],['headphones','Audio',Headphones],['globe','Reach',Globe],['share','Social Sharing',Share2],['thumbs-up','Approval',ThumbsUp],['smile','Positive',Smile],['gem','Premium',Gem],['crown','Influence',Crown],['rocket','Launch',Rocket],['briefcase','Professional',Briefcase],['calendar-check','Reliable',CalendarCheck],['clock','Timely',Clock],['eye','Vision',Eye],['wand-sparkles','Magic',WandSparkles],
+].map(([key,label,icon]) => ({ key: key as string, label: label as string, icon: icon as LucideIcon }));
+
+export function creatorBrandIcon(key: string): LucideIcon {
+  return CREATOR_BRAND_ICONS.find((item) => item.key === key)?.icon ?? Sparkles;
+}

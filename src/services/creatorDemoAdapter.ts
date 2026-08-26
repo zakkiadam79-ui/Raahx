@@ -32,5 +32,6 @@ export function getDemoCreators(): CreatorRecord[] {
     expertise: creator.expertise,
     collaboration_types: ["Sponsored Posts", "Brand Campaigns", "Content Production"],
     featured_work: [],
+    brand_love_points: [],
   }));
 }

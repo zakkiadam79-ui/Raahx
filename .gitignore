@@ -4,3 +4,5 @@ dist/
 .env.*
 !.env.example
 api/config/config.php
+api/uploads/creator-media/**
+!api/uploads/.htaccess
