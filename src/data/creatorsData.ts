@@ -1,0 +1,313 @@
+export type CreatorPlatform =
+  | "Instagram"
+  | "TikTok"
+  | "YouTube"
+  | "Facebook"
+  | "LinkedIn"
+  | "X"
+  | "Twitter";
+
+export interface CreatorSocialProfile {
+  platform: CreatorPlatform;
+  handle: string | null;
+  profile_url: string | null;
+}
+
+export interface CreatorProfile {
+  id: number;
+  name: string;
+  category: string;
+  categories: string[];
+  city: string;
+  region: string;
+  image: string;
+  shortBio: string;
+  about: string;
+  followers: number;
+  engagement: number;
+  compatibility: number;
+  handle: string;
+  platforms: CreatorPlatform[];
+  socials: CreatorSocialProfile[];
+  expertise: string[];
+}
+
+const driveImage = (id: string) =>
+  `https://drive.google.com/thumbnail?id=${id}&sz=w1200`;
+
+export const creatorCategories = [
+  "Lifestyle",
+  "Fashion",
+  "Travel",
+  "Food",
+  "Tech",
+  "Fitness",
+  "Education",
+  "Comedy",
+  "Business",
+  "Adventure",
+] as const;
+
+export const creatorCities = [
+  "Lahore",
+  "Karachi",
+  "Islamabad",
+  "Rawalpindi",
+  "Multan",
+  "Peshawar",
+  "Skardu",
+  "Gilgit",
+] as const;
+
+const creatorRecords: Array<Omit<CreatorProfile, "socials">> = [
+  {
+    id: 1,
+    name: "Lifestyle of Shehzadi",
+    category: "Lifestyle",
+    categories: ["Travel", "Lifestyle", "Content Creator"],
+    city: "Lahore",
+    region: "Punjab",
+    image: driveImage("1FaIKutAYSz4C8dneTrZGYaj8lbDNgBOU"),
+    shortBio: "Creating authentic content that connects brands with the right audience through storytelling, creativity and trust.",
+    about: "Lifestyle of Shehzadi is a Pakistan-based creator specializing in lifestyle, travel and promotional content. Her creative storytelling and engaged audience make her a strong fit for brands looking to build awareness and meaningful digital connections.",
+    followers: 125000,
+    engagement: 4.8,
+    compatibility: 92,
+    handle: "@shehzadilifestyle12",
+    platforms: ["Instagram", "TikTok", "YouTube", "Facebook"],
+    expertise: ["Travel", "Lifestyle", "Fashion", "Food", "Events", "Brand Promotion"],
+  },
+  {
+    id: 2,
+    name: "Mishal Rajput",
+    category: "Fashion",
+    categories: ["Fashion", "Lifestyle", "Beauty"],
+    city: "Karachi",
+    region: "Sindh",
+    image: driveImage("12IGex9NTHIhueaSQdY5huO2SuKSPFYiH"),
+    shortBio: "Karachi-based fashion storyteller known for elevated looks, seasonal edits and brand-first styling that feels personal.",
+    about: "Mishal blends couture-inspired styling with everyday wearability, helping labels reach a style-conscious urban audience across short-form platforms.",
+    followers: 210000,
+    engagement: 5.1,
+    compatibility: 89,
+    handle: "@mishalrajput",
+    platforms: ["Instagram", "TikTok", "YouTube"],
+    expertise: ["Fashion", "Beauty", "Lifestyle", "Luxury", "Lookbooks"],
+  },
+  {
+    id: 3,
+    name: "Daniyal Explorer",
+    category: "Travel",
+    categories: ["Travel", "Adventure", "Vlogs"],
+    city: "Islamabad",
+    region: "Islamabad",
+    image: driveImage("1D2inT9icS2L1xSNizlWPQwzpCqpDIFvU"),
+    shortBio: "Documenting Pakistan's hidden routes, mountain roads and city weekends for a growing community of wanderers.",
+    about: "Daniyal produces cinematic travel films and destination guides. Tourism, outdoor and hospitality brands work with him for authentic on-location storytelling.",
+    followers: 180000,
+    engagement: 4.6,
+    compatibility: 87,
+    handle: "@daniyalexplorer",
+    platforms: ["Instagram", "TikTok", "YouTube", "Facebook"],
+    expertise: ["Travel", "Adventure", "Vlogs", "Tourism", "Photography"],
+  },
+  {
+    id: 4,
+    name: "Foodie Girl Sara",
+    category: "Food",
+    categories: ["Food", "Lifestyle", "Reviews"],
+    city: "Lahore",
+    region: "Punjab",
+    image: driveImage("1WMwGlXnBV82j7JmXgnBTXNGjEd6VtRaC"),
+    shortBio: "Lahore's go-to food voice for cafe hops, home recipes and honest restaurant collaborations.",
+    about: "Sara turns tables into stories. Her warm on-camera presence supports restaurant discovery and product launches for food and beverage brands.",
+    followers: 95000,
+    engagement: 6.2,
+    compatibility: 90,
+    handle: "@foodiegirlsara",
+    platforms: ["Instagram", "TikTok", "YouTube"],
+    expertise: ["Food", "Cafes", "Recipes", "Reviews", "Brand Tastings"],
+  },
+  {
+    id: 5,
+    name: "Tech With Zeeshan",
+    category: "Tech",
+    categories: ["Tech", "Reviews", "Education"],
+    city: "Karachi",
+    region: "Sindh",
+    image: "https://images.pexels.com/photos/12980904/pexels-photo-12980904.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=900&w=700",
+    shortBio: "Unboxings, practical reviews and clear tech explainers for Pakistan's next generation of gadget buyers.",
+    about: "Zeeshan simplifies devices, apps and digital products for a curious young audience looking for credible buying advice.",
+    followers: 160000,
+    engagement: 4.3,
+    compatibility: 84,
+    handle: "@techwithzeeshan",
+    platforms: ["Instagram", "TikTok", "YouTube"],
+    expertise: ["Tech", "Gadgets", "Reviews", "Unboxing", "Startups"],
+  },
+  {
+    id: 6,
+    name: "Fit Life Ayesha",
+    category: "Fitness",
+    categories: ["Fitness", "Wellness", "Lifestyle"],
+    city: "Rawalpindi",
+    region: "Punjab",
+    image: driveImage("1tG_F-y5at7O02OTETQuRZIAiFaKUYIKW"),
+    shortBio: "Strength, mobility and everyday wellness routines that make healthy living feel achievable.",
+    about: "Ayesha coaches a loyal community through home workouts, nutrition notes and mindset content with an approachable voice.",
+    followers: 130000,
+    engagement: 5.4,
+    compatibility: 88,
+    handle: "@fitlifeayesha",
+    platforms: ["Instagram", "TikTok", "YouTube"],
+    expertise: ["Fitness", "Wellness", "Nutrition", "Activewear", "Motivation"],
+  },
+  {
+    id: 7,
+    name: "Hasnain Khan",
+    category: "Comedy",
+    categories: ["Comedy", "Skits", "Lifestyle"],
+    city: "Multan",
+    region: "Punjab",
+    image: "https://images.pexels.com/photos/19433855/pexels-photo-19433855.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=900&w=700",
+    shortBio: "Relatable desi humor and character sketches that turn everyday moments into shareable gold.",
+    about: "Hasnain's punchy storytelling helps campaigns land product messages while keeping the laugh natural and memorable.",
+    followers: 230000,
+    engagement: 7.1,
+    compatibility: 86,
+    handle: "@hasnainkhansketches",
+    platforms: ["Instagram", "TikTok", "YouTube", "Facebook"],
+    expertise: ["Comedy", "Skits", "Trends", "Brand Humor", "Reels"],
+  },
+  {
+    id: 8,
+    name: "Study With Zainab",
+    category: "Education",
+    categories: ["Education", "Study", "Motivation"],
+    city: "Lahore",
+    region: "Punjab",
+    image: driveImage("1x_ockugWIiKfHhqtvjvBKnO2WyQyq2Og"),
+    shortBio: "Study plans, exam strategy and calm productivity for students building their future.",
+    about: "Zainab helps students stay consistent with practical study systems and gentle accountability across her learning community.",
+    followers: 70000,
+    engagement: 5.8,
+    compatibility: 91,
+    handle: "@studywithzainab",
+    platforms: ["Instagram", "TikTok", "YouTube"],
+    expertise: ["Education", "Study Tips", "Productivity", "EdTech", "Books"],
+  },
+  {
+    id: 9,
+    name: "Wander with Hira",
+    category: "Travel",
+    categories: ["Travel", "Adventure", "Culture"],
+    city: "Skardu",
+    region: "Gilgit-Baltistan",
+    image: "https://images.pexels.com/photos/37171474/pexels-photo-37171474.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=900&w=700",
+    shortBio: "Slow travel through the north — valleys, local hosts and the quiet luxury of the mountains.",
+    about: "Hira captures Gilgit-Baltistan with an intimate, cinematic eye for destination stories that feel lived-in, not staged.",
+    followers: 90000,
+    engagement: 4.9,
+    compatibility: 85,
+    handle: "@wanderwithhira",
+    platforms: ["Instagram", "TikTok", "YouTube"],
+    expertise: ["Travel", "Culture", "Adventure", "Tourism", "Stories"],
+  },
+  {
+    id: 10,
+    name: "Muhammad Bilal",
+    category: "Business",
+    categories: ["Business", "Finance", "Leadership"],
+    city: "Lahore",
+    region: "Punjab",
+    image: "https://images.pexels.com/photos/7179713/pexels-photo-7179713.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=900&w=700",
+    shortBio: "Founder stories, market notes and practical growth lessons for Pakistan's ambitious professionals.",
+    about: "Bilal speaks to founders and corporate talent with crisp, high-signal business content and practical growth insights.",
+    followers: 85000,
+    engagement: 3.9,
+    compatibility: 82,
+    handle: "@mbilal.official",
+    platforms: ["Instagram", "TikTok", "YouTube"],
+    expertise: ["Business", "Finance", "Startups", "Leadership", "Keynotes"],
+  },
+  {
+    id: 11,
+    name: "Kainat Faisal",
+    category: "Lifestyle",
+    categories: ["Lifestyle", "Home", "Fashion"],
+    city: "Islamabad",
+    region: "Islamabad",
+    image: "https://images.pexels.com/photos/10209449/pexels-photo-10209449.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=900&w=700",
+    shortBio: "Soft, considered living — home rituals, capsule wardrobes and everyday elegance from the capital.",
+    about: "Kainat creates calm lifestyle films for home, beauty and apparel brands seeking a refined, audience-first aesthetic.",
+    followers: 140000,
+    engagement: 5,
+    compatibility: 90,
+    handle: "@kainatfaisal",
+    platforms: ["Instagram", "TikTok", "YouTube"],
+    expertise: ["Lifestyle", "Home", "Fashion", "Beauty", "Brand Films"],
+  },
+  {
+    id: 12,
+    name: "Northern Vibes",
+    category: "Adventure",
+    categories: ["Adventure", "Travel", "Outdoors"],
+    city: "Gilgit",
+    region: "Gilgit-Baltistan",
+    image: "https://images.pexels.com/photos/11380118/pexels-photo-11380118.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=900&w=700",
+    shortBio: "High passes, jeep tracks and campfire nights — the north, filmed with raw energy.",
+    about: "Northern Vibes is an adventure imprint for trekkers and road-trippers, creating rugged location content for outdoor brands.",
+    followers: 75000,
+    engagement: 4.4,
+    compatibility: 83,
+    handle: "@northernvibes.pk",
+    platforms: ["Instagram", "TikTok", "YouTube"],
+    expertise: ["Adventure", "Travel", "Trekking", "Tourism", "Camping"],
+  },
+];
+
+function socialProfiles(handle: string, platforms: CreatorPlatform[]): CreatorSocialProfile[] {
+  const username = handle.replace(/^@/, "").trim();
+
+  return platforms.map((platform) => {
+    if (platform === "Instagram") {
+      return {
+        platform,
+        handle,
+        profile_url: username ? `https://www.instagram.com/${username}/` : null,
+      };
+    }
+    if (platform === "TikTok") {
+      return {
+        platform,
+        handle,
+        profile_url: username ? `https://www.tiktok.com/@${username}` : null,
+      };
+    }
+
+    // The approved static data does not include canonical channel/page URLs for
+    // these platforms. Keep them visible but non-clickable rather than guessing.
+    return { platform, handle: null, profile_url: null };
+  });
+}
+
+export const creators: CreatorProfile[] = creatorRecords.map((creator) => ({
+  ...creator,
+  socials: socialProfiles(creator.handle, creator.platforms),
+}));
+
+export function isValidCreatorProfileUrl(value: string | null | undefined): value is string {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+export function formatCreatorCount(count: number) {
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1).replace(".0", "")}M`;
+  if (count >= 1_000) return `${(count / 1_000).toFixed(0)}K`;
+  return String(count);
+}

@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import {
-  FileText, Briefcase, Users, FolderKanban, Database, LogOut, LayoutDashboard, Menu, X
+  FileText, Briefcase, Users, UserRoundSearch, ClipboardList, FolderKanban, Database, LogOut, LayoutDashboard, Menu, X
 } from "lucide-react";
 
 // Importing components directly from your existing file structure
 import CaseStudiesAdmin from "../../components/admin/CaseStudiesAdmin";
 import ServicesAdmin from "../../components/admin/ServicesAdmin";
 import TeamAdmin from "../../components/admin/TeamAdmin";
+import CreatorsAdmin from "../../components/admin/CreatorsAdmin";
+import CreatorRequestsAdmin from "../../components/admin/CreatorRequestsAdmin";
 import AdminBlog from "../AdminBlog";
 import AdminDashboard from "../AdminDashboard";
 import MigrationAdmin from "./MigrationAdmin";
@@ -99,6 +101,8 @@ export default function AdminLayout() {
     { label: "Services", path: "/admin/services", icon: Briefcase },
     { label: "Case Studies", path: "/admin/case-studies", icon: FolderKanban },
     { label: "Team", path: "/admin/team", icon: Users },
+    { label: "Creator Network", path: "/admin/creators", icon: UserRoundSearch },
+    { label: "Creator Requests", path: "/admin/creator-requests", icon: ClipboardList },
     { label: "Migration", path: "/admin/migration", icon: Database },
   ];
 
@@ -177,6 +181,8 @@ export default function AdminLayout() {
             <Route path="/services" element={<ServicesAdmin />} />
             <Route path="/case-studies" element={<CaseStudiesAdmin />} />
             <Route path="/team" element={<TeamAdmin />} />
+            <Route path="/creators" element={<CreatorsAdmin />} />
+            <Route path="/creator-requests" element={<CreatorRequestsAdmin />} />
             <Route path="/migration" element={<MigrationAdmin />} />
           </Routes>
         </main>

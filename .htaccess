@@ -20,6 +20,14 @@ RewriteRule ^ https://raahx.com%{REQUEST_URI} [R=301,L,NE]
   </FilesMatch>
 </IfModule>
 
+# Revalidate the SPA entry point so deployments never strand visitors on stale
+# asset hashes. This does not affect hashed assets or API/PHP responses.
+<IfModule mod_headers.c>
+  <Files "index.html">
+    Header set Cache-Control "no-cache"
+  </Files>
+</IfModule>
+
 # Leave all API requests to api/.htaccess and api/index.php.
 RewriteRule ^api(?:/|$) - [L]
 

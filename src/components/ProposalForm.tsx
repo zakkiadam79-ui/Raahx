@@ -38,7 +38,7 @@ const processSteps = [
   },
 ];
 
-export default function ProposalForm() {
+export default function ProposalForm({ sectionId = "proposal" }: { sectionId?: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -93,7 +93,7 @@ export default function ProposalForm() {
   };
 
   return (
-    <section id="proposal" className="py-24 bg-primary relative overflow-hidden">
+    <section id={sectionId || undefined} className="py-24 bg-primary relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
 
         {/* Headline */}

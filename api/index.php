@@ -45,6 +45,22 @@ try {
         api_dispatch_case_studies($pdo, $config, $method, array_slice($segments, 1), $body);
     }
 
+    if ($resource === 'creators') {
+        api_dispatch_creators($pdo, $config, $method, array_slice($segments, 1), $body);
+    }
+
+    if ($resource === 'creator-applications') {
+        api_dispatch_creator_applications($pdo, $config, $method, array_slice($segments, 1), $body);
+    }
+
+    if ($resource === 'creator-access') {
+        api_dispatch_creator_access($pdo, $config, $method, array_slice($segments, 1), $body);
+    }
+
+    if ($resource === 'creator-collaboration-requests') {
+        api_dispatch_creator_collaboration_requests($pdo, $config, $method, array_slice($segments, 1), $body);
+    }
+
     if ($resource === 'subscribers') {
         api_dispatch_subscribers($pdo, $config, $method, array_slice($segments, 1), $body);
     }
@@ -241,6 +257,114 @@ function api_dispatch_case_studies(PDO $pdo, array $config, string $method, arra
     }
 
     throw new ApiException(404, 'NOT_FOUND', 'Case Study endpoint not found.');
+}
+
+function api_dispatch_creators(PDO $pdo, array $config, string $method, array $segments, array $body): void
+{
+    $authenticated = static function () use ($pdo, $config): void {
+        Auth::requireAuthenticated($pdo, $config);
+    };
+
+    if (($segments[0] ?? null) === 'admin') {
+        $authenticated();
+        if (count($segments) === 1 && $method === 'GET') {
+            Http::json(api_creators_list($pdo, $_GET, false));
+        }
+        if (count($segments) === 2 && $method === 'GET') {
+            $id = Validation::id(['id' => $segments[1]]);
+            Http::json(api_creators_find($pdo, $id ?? '', false));
+        }
+        if (count($segments) === 1 || count($segments) === 2) {
+            Http::methodNotAllowed(['GET']);
+        }
+        throw new ApiException(404, 'NOT_FOUND', 'Creator admin endpoint not found.');
+    }
+
+    if (count($segments) === 0) {
+        if ($method === 'GET') Http::json(api_creators_list($pdo, $_GET, true));
+        if ($method === 'POST') {
+            $authenticated();
+            Http::json(api_creators_create($pdo, $body), 201);
+        }
+        Http::methodNotAllowed(['GET', 'POST']);
+    }
+
+    if (count($segments) === 1) {
+        $id = Validation::id(['id' => $segments[0]]);
+        if ($method === 'GET') Http::json(api_creators_find($pdo, $id ?? '', true));
+        if ($method === 'PUT') {
+            $authenticated();
+            Http::json(api_creators_update($pdo, $id ?? '', $body));
+        }
+        if ($method === 'DELETE') {
+            $authenticated();
+            api_creators_delete($pdo, $id ?? '');
+            Http::json(['deleted' => true]);
+        }
+        Http::methodNotAllowed(['GET', 'PUT', 'DELETE']);
+    }
+
+    throw new ApiException(404, 'NOT_FOUND', 'Creator endpoint not found.');
+}
+
+function api_dispatch_creator_applications(PDO $pdo, array $config, string $method, array $segments, array $body): void
+{
+    if ($segments === [] && $method === 'POST') {
+        Http::json(api_creator_applications_submit($pdo, $body, $config), 201);
+    }
+    if (($segments[0] ?? null) !== 'admin') {
+        if ($segments === []) Http::methodNotAllowed(['POST']);
+        throw new ApiException(404, 'NOT_FOUND', 'Creator application endpoint not found.');
+    }
+    Auth::requireAuthenticated($pdo, $config);
+    if (count($segments) === 1 && $method === 'GET') {
+        Http::json(api_creator_applications_list($pdo, $_GET));
+    }
+    if (count($segments) === 2 && $method === 'GET') {
+        Http::json(api_creator_applications_find($pdo, Validation::id(['id'=>$segments[1]]) ?? ''));
+    }
+    if (count($segments) === 3 && $method === 'POST') {
+        $id = Validation::id(['id'=>$segments[1]]) ?? '';
+        if ($segments[2] === 'approve') Http::json(api_creator_applications_approve($pdo, $id, $body, $config));
+        if ($segments[2] === 'reject') Http::json(api_creator_applications_reject($pdo, $id, $body));
+    }
+    if (count($segments) >= 1 && count($segments) <= 3) Http::methodNotAllowed(['GET', 'POST']);
+    throw new ApiException(404, 'NOT_FOUND', 'Creator application admin endpoint not found.');
+}
+
+function api_dispatch_creator_access(PDO $pdo, array $config, string $method, array $segments, array $body): void
+{
+    if ($segments === ['request'] && $method === 'POST') Http::json(api_creator_access_request($pdo, $body, $config));
+    if ($segments === ['verify'] && $method === 'POST') Http::json(api_creator_access_verify($pdo, $body));
+    if ($segments === ['profile'] && $method === 'PUT') Http::json(api_creator_access_update($pdo, $body));
+    if (($segments[0] ?? null) === 'admin') {
+        Auth::requireAuthenticated($pdo, $config);
+        if (count($segments) === 3 && $segments[2] === 'revoke' && $method === 'POST') {
+            Http::json(api_creator_access_revoke($pdo, Validation::id(['id'=>$segments[1]]) ?? ''));
+        }
+    }
+    if (in_array($segments[0] ?? '', ['request','verify','profile','admin'], true)) Http::methodNotAllowed(['POST','PUT']);
+    throw new ApiException(404, 'NOT_FOUND', 'Creator access endpoint not found.');
+}
+
+function api_dispatch_creator_collaboration_requests(PDO $pdo, array $config, string $method, array $segments, array $body): void
+{
+    if ($segments === [] && $method === 'POST') {
+        Http::json(api_creator_collaboration_create($pdo, $body, $config), 201);
+    }
+    if (($segments[0] ?? null) !== 'admin') {
+        if ($segments === []) Http::methodNotAllowed(['POST']);
+        throw new ApiException(404, 'NOT_FOUND', 'Creator collaboration endpoint not found.');
+    }
+    Auth::requireAuthenticated($pdo, $config);
+    if (count($segments) === 1 && $method === 'GET') Http::json(api_creator_collaboration_list($pdo, $_GET));
+    if (count($segments) === 2 && $method === 'GET') {
+        $id = filter_var($segments[1], FILTER_VALIDATE_INT);
+        if ($id === false) throw new ApiException(400, 'VALIDATION_ERROR', 'Invalid collaboration request ID.');
+        Http::json(api_creator_collaboration_find($pdo, (int) $id));
+    }
+    if (count($segments) === 1 || count($segments) === 2) Http::methodNotAllowed(['GET']);
+    throw new ApiException(404, 'NOT_FOUND', 'Creator collaboration admin endpoint not found.');
 }
 
 function api_dispatch_subscribers(PDO $pdo, array $config, string $method, array $segments, array $body): void

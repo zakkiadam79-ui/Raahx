@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import Header from "./components/Header";
 import Hero from "./components/Hero";
@@ -12,7 +12,6 @@ import WhyChooseUs from "./components/WhyChooseUs";
 import CaseStudies from "./components/CaseStudies";
 import Process from "./components/Process";
 import Team from "./components/Team";
-import ProposalForm from "./components/ProposalForm";
 import Footer from "./components/Footer";
 import FloatingWhatsApp from "./components/FloatingWhatsApp";
 
@@ -24,6 +23,11 @@ const AboutPage = lazy(() => import("./pages/AboutPage"));
 const BlogIndex = lazy(() => import("./pages/BlogIndex"));
 const BlogDetail = lazy(() => import("./pages/BlogDetail"));
 const CaseStudyDetail = lazy(() => import("./pages/CaseStudyDetail"));
+const ProposalForm = lazy(() => import("./components/ProposalForm"));
+const CreatorNetwork = lazy(() => import("./pages/CreatorNetwork"));
+const CreatorDetail = lazy(() => import("./pages/CreatorDetail"));
+const CreatorJoin = lazy(() => import("./pages/CreatorJoin"));
+const CreatorEdit = lazy(() => import("./pages/CreatorEdit"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 
 function ScrollToHash() {
@@ -73,6 +77,55 @@ function CanonicalUrl() {
   return null;
 }
 
+function RobotsMeta() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const robots = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    if (!robots) return;
+    robots.content = location.pathname.startsWith("/admin")
+      ? "noindex, nofollow"
+      : "index, follow";
+  }, [location.pathname]);
+
+  return null;
+}
+
+function DeferredProposalForm() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element || shouldRender) return;
+    if (!("IntersectionObserver" in window)) {
+      setShouldRender(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setShouldRender(true);
+        observer.disconnect();
+      },
+      { rootMargin: "1000px 0px" },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [shouldRender]);
+
+  return (
+    <div id="proposal" ref={containerRef} className="min-h-[760px] bg-primary sm:min-h-[900px] lg:min-h-[1050px]">
+      {shouldRender && (
+        <Suspense fallback={null}>
+          <ProposalForm sectionId="" />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+
 function Home() {
   return (
     <main>
@@ -82,7 +135,7 @@ function Home() {
       <WhyChooseUs />
       <CaseStudies />
       <Team />
-      <ProposalForm />
+      <DeferredProposalForm />
     </main>
   );
 }
@@ -96,12 +149,17 @@ export default function App() {
       {!isAdminRoute && <Header />}
       <ScrollToHash />
       <CanonicalUrl />
+      <RobotsMeta />
       <Suspense fallback={<div className="min-h-screen" aria-busy="true" />}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/services/:slug" element={<ServiceDetail />} />
           <Route path="/case-studies/:slug" element={<CaseStudyDetail />} />
+          <Route path="/creator-network" element={<CreatorNetwork />} />
+          <Route path="/creator-network/join" element={<CreatorJoin />} />
+          <Route path="/creator-network/edit" element={<CreatorEdit />} />
+          <Route path="/creator-network/:id" element={<CreatorDetail />} />
           <Route path="/blog" element={<BlogIndex />} />
           <Route path="/blog/:slug" element={<BlogDetail />} />
           <Route path="/proposal" element={<ProposalForm />} />
