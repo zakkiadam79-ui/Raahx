@@ -130,7 +130,22 @@ function configuredServiceApiBaseUrl(): string | undefined {
     env?: Record<string, string | undefined>;
   }).env;
   const value = env?.VITE_API_BASE_URL?.trim();
-  return value ? value.replace(/\/$/, "") : undefined;
+  if (!value) return undefined;
+
+  // Never let a build-time localhost override send production visitors to
+  // their own computer. Localhost targets remain valid while the frontend is
+  // itself running locally; deployed pages safely fall back to same-origin /api.
+  if (typeof window !== "undefined") {
+    try {
+      const configuredHost = new URL(value, window.location.origin).hostname;
+      const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+      if (!localHosts.has(window.location.hostname) && localHosts.has(configuredHost)) return undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  return value.replace(/\/$/, "");
 }
 
 export function isServiceApiConfigured(): boolean {

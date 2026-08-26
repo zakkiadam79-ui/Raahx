@@ -86,6 +86,17 @@ try {
     Http::error($exception);
 } catch (Throwable $exception) {
     raahx_log_exception($exception);
+    $creatorResources = ['creators', 'creator-applications', 'creator-access', 'creator-collaboration-requests'];
+    $sqlState = $exception instanceof PDOException
+        ? (string) ($exception->errorInfo[0] ?? $exception->getCode())
+        : '';
+    if (in_array($resource ?? null, $creatorResources, true) && in_array($sqlState, ['42S02', '42S22'], true)) {
+        Http::error(new ApiException(
+            503,
+            'CREATOR_SCHEMA_NOT_READY',
+            'The Creator Network database schema is not available or does not match this API version.',
+        ));
+    }
     Http::error(new ApiException(500, 'INTERNAL_ERROR', 'An unexpected server error occurred.'));
 }
 

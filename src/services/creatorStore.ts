@@ -148,9 +148,26 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   } catch {
     throw new CreatorApiError(0, "NETWORK_ERROR", "The Creator API could not be reached.");
   }
+  const contentType = response.headers.get("content-type") ?? "";
   const payload = await response.json().catch(() => null) as { success?: boolean; data?: T; error?: { code?: string; message?: string } } | null;
-  if (!response.ok || payload?.success !== true) {
-    throw new CreatorApiError(response.status, payload?.error?.code ?? "API_ERROR", payload?.error?.message ?? "The Creator API returned an error.");
+  if (!payload || typeof payload !== "object") {
+    throw new CreatorApiError(
+      response.status,
+      "INVALID_API_RESPONSE",
+      contentType.includes("text/html")
+        ? "The Creator API returned the website HTML instead of JSON. Check the /api server routing."
+        : "The Creator API returned an invalid non-JSON response.",
+    );
+  }
+  if (!response.ok || payload.success !== true) {
+    const fallback = response.status === 401 || response.status === 403
+      ? "Creator API authentication is required."
+      : response.status === 404
+        ? "The requested Creator API endpoint was not found."
+        : response.status >= 500
+          ? "The Creator API reported a server error."
+          : "The Creator API returned an error.";
+    throw new CreatorApiError(response.status, payload.error?.code ?? "API_ERROR", payload.error?.message ?? fallback);
   }
   return payload.data as T;
 }
