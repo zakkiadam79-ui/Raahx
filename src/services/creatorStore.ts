@@ -36,6 +36,7 @@ export interface CreatorRecord {
   portfolio_url: string | null;
   short_bio: string | null;
   about: string | null;
+  brand_love_heading: string | null;
   city: string | null;
   region: string | null;
   followers: number;
@@ -67,6 +68,7 @@ export interface CreatorInput {
   portfolio_url: string | null;
   short_bio: string | null;
   about: string | null;
+  brand_love_heading: string | null;
   city: string | null;
   region: string | null;
   followers_override: number | null;

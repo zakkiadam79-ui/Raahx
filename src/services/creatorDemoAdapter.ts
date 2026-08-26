@@ -11,6 +11,7 @@ export function getDemoCreators(): CreatorRecord[] {
     portfolio_url: creator.socials.find((social) => Boolean(social.profile_url))?.profile_url ?? null,
     short_bio: creator.shortBio,
     about: creator.about,
+    brand_love_heading: null,
     city: creator.city,
     region: creator.region,
     followers: creator.followers,

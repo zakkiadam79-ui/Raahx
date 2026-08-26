@@ -82,6 +82,7 @@ function api_creator_with_children(PDO $pdo, array $row, bool $includePrivate): 
         'portfolio_url' => $row['portfolio_url'],
         'short_bio' => $row['short_bio'],
         'about' => $row['about'],
+        'brand_love_heading' => $row['brand_love_heading'],
         'city' => $row['city'],
         'region' => $row['region'],
         'followers' => $row['followers_override'] === null ? (int) $row['followers'] : (int) $row['followers_override'],
@@ -199,6 +200,13 @@ function api_creator_payload(array $input, ?array $existing = null, bool $adminC
     $slugValue = Validation::string($source, 'slug', false, 191) ?? api_creator_slug_seed($displayName);
     $status = $adminControlled ? (Validation::string($source, 'status', false, 32) ?? 'hidden') : (string) ($existing['status'] ?? 'hidden');
     if (!in_array($status, ['published', 'hidden'], true)) throw new ApiException(400, 'VALIDATION_ERROR', 'status must be published or hidden.');
+    $brandLoveHeading = $adminControlled
+        ? Validation::nullableString($source, 'brand_love_heading', 255)
+        : ($existing['brand_love_heading'] ?? null);
+    $brandLovePoints = api_creator_brand_love_points($source['brand_love_points'] ?? []);
+    if ($brandLovePoints !== [] && $brandLoveHeading === null) {
+        throw new ApiException(400, 'VALIDATION_ERROR', 'brand_love_heading is required when brand-love points are provided.');
+    }
     return [
         'full_name' => Validation::string($source, 'full_name', true, 255),
         'display_name' => $displayName,
@@ -209,6 +217,7 @@ function api_creator_payload(array $input, ?array $existing = null, bool $adminC
         'portfolio_url' => Validation::url($source, 'portfolio_url'),
         'short_bio' => Validation::nullableString($source, 'short_bio', 5000),
         'about' => Validation::nullableString($source, 'about', 100000),
+        'brand_love_heading' => $brandLoveHeading,
         'city' => Validation::nullableString($source, 'city', 191),
         'region' => Validation::nullableString($source, 'region', 191),
         'followers_override' => $adminControlled ? api_creator_nullable_unsigned($source, 'followers_override') : ($existing['followers_override'] ?? null),
@@ -223,7 +232,7 @@ function api_creator_payload(array $input, ?array $existing = null, bool $adminC
         'expertise' => api_creator_string_list($source['expertise'] ?? [], 'expertise'),
         'collaboration_types' => api_creator_string_list($source['collaboration_types'] ?? [], 'collaboration_types'),
         'featured_work' => api_creator_featured_work($source['featured_work'] ?? []),
-        'brand_love_points' => api_creator_brand_love_points($source['brand_love_points'] ?? []),
+        'brand_love_points' => $brandLovePoints,
     ];
 }
 
@@ -362,10 +371,10 @@ function api_creator_assert_email_available(PDO $pdo, string $email, ?string $ig
 function api_creators_insert(PDO $pdo, string $id, array $payload): void
 {
     $statement = $pdo->prepare('INSERT INTO creators
-        (id, full_name, display_name, email, whatsapp, slug, profile_image_url, portfolio_url, short_bio, about, city, region,
+        (id, full_name, display_name, email, whatsapp, slug, profile_image_url, portfolio_url, short_bio, about, brand_love_heading, city, region,
          followers, followers_override, engagement_rate, compatibility_score, is_verified, status, display_order, approved_at)
         VALUES
-        (:id, :full_name, :display_name, :email, :whatsapp, :slug, :profile_image_url, :portfolio_url, :short_bio, :about, :city, :region,
+        (:id, :full_name, :display_name, :email, :whatsapp, :slug, :profile_image_url, :portfolio_url, :short_bio, :about, :brand_love_heading, :city, :region,
          0, :followers_override, :engagement_rate, :compatibility_score, :is_verified, :status, :display_order, :approved_at)');
     $statement->execute(array_merge(['id' => $id], api_creator_parent_parameters($payload)));
 }
@@ -373,7 +382,7 @@ function api_creators_insert(PDO $pdo, string $id, array $payload): void
 function api_creators_update_parent(PDO $pdo, string $id, array $payload): void
 {
     $statement = $pdo->prepare('UPDATE creators SET full_name=:full_name, display_name=:display_name, email=:email,
-        whatsapp=:whatsapp, slug=:slug, profile_image_url=:profile_image_url, portfolio_url=:portfolio_url, short_bio=:short_bio, about=:about,
+        whatsapp=:whatsapp, slug=:slug, profile_image_url=:profile_image_url, portfolio_url=:portfolio_url, short_bio=:short_bio, about=:about, brand_love_heading=:brand_love_heading,
         city=:city, region=:region, followers_override=:followers_override, engagement_rate=:engagement_rate,
         compatibility_score=:compatibility_score, is_verified=:is_verified, status=:status,
         display_order=:display_order, approved_at=:approved_at WHERE id=:id');
@@ -385,7 +394,8 @@ function api_creator_parent_parameters(array $payload): array
     return [
         'full_name'=>$payload['full_name'], 'display_name'=>$payload['display_name'], 'email'=>$payload['email'],
         'whatsapp'=>$payload['whatsapp'], 'slug'=>$payload['slug'], 'profile_image_url'=>$payload['profile_image_url'],
-        'portfolio_url'=>$payload['portfolio_url'], 'short_bio'=>$payload['short_bio'], 'about'=>$payload['about'], 'city'=>$payload['city'], 'region'=>$payload['region'],
+        'portfolio_url'=>$payload['portfolio_url'], 'short_bio'=>$payload['short_bio'], 'about'=>$payload['about'],
+        'brand_love_heading'=>$payload['brand_love_heading'], 'city'=>$payload['city'], 'region'=>$payload['region'],
         'followers_override'=>$payload['followers_override'], 'engagement_rate'=>$payload['engagement_rate'],
         'compatibility_score'=>$payload['compatibility_score'], 'is_verified'=>$payload['is_verified'] ? 1 : 0,
         'status'=>$payload['status'], 'display_order'=>$payload['display_order'], 'approved_at'=>$payload['approved_at'],

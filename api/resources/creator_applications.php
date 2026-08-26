@@ -99,6 +99,7 @@ function api_creator_applications_approve(PDO $pdo, string $id, array $input, ar
         $approvedAt = date('Y-m-d H:i:s');
         $creatorInput = array_merge($submitted, $submitted['submitted_payload'], [
             'portfolio_url'=>$submitted['portfolio_url'],
+            'brand_love_heading'=>$input['brand_love_heading'] ?? null,
             'slug'=>$slug, 'status'=>$status, 'display_order'=>api_creator_next_display_order($pdo),
             'engagement_rate'=>$input['engagement_rate'] ?? 0, 'compatibility_score'=>$input['compatibility_score'] ?? null,
             'is_verified'=>$input['is_verified'] ?? false, 'followers_override'=>$input['followers_override'] ?? null,
