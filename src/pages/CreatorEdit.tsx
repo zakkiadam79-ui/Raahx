@@ -20,7 +20,7 @@ export default function CreatorEdit() {
     verifyCreatorAccess(token).then(({ creator: result }) => {
       if (!active) return;
       setCreator(result);
-      setForm({ display_name: result.display_name, email: result.email || "", whatsapp: result.whatsapp || null, profile_image_url: result.profile_image_url, short_bio: result.short_bio, about: result.about, city: result.city, region: result.region, socials: result.socials, categories: result.categories.length ? result.categories : [""], expertise: result.expertise.length ? result.expertise : [""], collaboration_types: result.collaboration_types.length ? result.collaboration_types : [""], featured_work: result.featured_work });
+      setForm({ display_name: result.display_name, email: result.email || "", whatsapp: result.whatsapp || null, profile_image_url: result.profile_image_url, portfolio_url: result.portfolio_url, short_bio: result.short_bio, about: result.about, city: result.city, region: result.region, socials: result.socials, categories: result.categories.length ? result.categories : [""], expertise: result.expertise.length ? result.expertise : [""], collaboration_types: result.collaboration_types.length ? result.collaboration_types : [""], featured_work: result.featured_work });
       setState("ready");
     }).catch((failure) => { if (active) { setError(creatorError(failure)); setState("invalid"); } });
     return () => { active = false; };

@@ -36,10 +36,10 @@ function api_creator_application_mail_messages(array $config, array $application
         $socialLines[] = sprintf('%s — %s — %s followers', $social['platform'], $social['profile_url'], (int) $social['follower_count']);
     }
     $adminHtml = sprintf(
-        '<h2>New Creator Application Requires Review</h2><p><strong>Application ID:</strong> %s</p><p><strong>Full name:</strong> %s</p><p><strong>Display name:</strong> %s</p><p><strong>Email:</strong> %s</p><p><strong>WhatsApp:</strong> %s</p><p><strong>City:</strong> %s</p><p><strong>Categories:</strong> %s</p><p><strong>Social accounts:</strong><br>%s</p><p><strong>Total submitted followers:</strong> %s</p><p><strong>Short bio:</strong> %s</p><p><strong>Submitted:</strong> %s</p><p><a href="%s/admin/creator-requests">Review Creator applications</a></p>',
+        '<h2>New Creator Application Requires Review</h2><p><strong>Application ID:</strong> %s</p><p><strong>Full name:</strong> %s</p><p><strong>Display name:</strong> %s</p><p><strong>Email:</strong> %s</p><p><strong>WhatsApp:</strong> %s</p><p><strong>City:</strong> %s</p><p><strong>Portfolio:</strong> %s</p><p><strong>Categories:</strong> %s</p><p><strong>Social accounts:</strong><br>%s</p><p><strong>Total submitted followers:</strong> %s</p><p><strong>Short bio:</strong> %s</p><p><strong>Submitted:</strong> %s</p><p><a href="%s/admin/creator-requests">Review Creator applications</a></p>',
         api_creator_html($application['id']), api_creator_html($application['full_name']), api_creator_html($application['display_name']),
         api_creator_html($application['email']), api_creator_html($application['whatsapp'] ?? 'N/A'), api_creator_html($application['city'] ?? 'N/A'),
-        api_creator_html($categories ?: 'None'), nl2br(api_creator_html(implode("\n", $socialLines) ?: 'None')),
+        api_creator_html($application['portfolio_url'] ?? 'N/A'), api_creator_html($categories ?: 'None'), nl2br(api_creator_html(implode("\n", $socialLines) ?: 'None')),
         api_creator_html($followers), nl2br(api_creator_html($application['short_bio'] ?? 'N/A')),
         api_creator_html($application['created_at']), api_creator_html($appUrl),
     );

@@ -8,6 +8,7 @@ export function getDemoCreators(): CreatorRecord[] {
     name: creator.name,
     slug: creator.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
     profile_image_url: creator.image,
+    portfolio_url: creator.socials.find((social) => Boolean(social.profile_url))?.profile_url ?? null,
     short_bio: creator.shortBio,
     about: creator.about,
     city: creator.city,

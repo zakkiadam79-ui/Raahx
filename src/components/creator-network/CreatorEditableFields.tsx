@@ -8,6 +8,7 @@ export interface EditableCreatorFields {
   email: string;
   whatsapp: string | null;
   profile_image_url: string | null;
+  portfolio_url: string | null;
   short_bio: string | null;
   about: string | null;
   city: string | null;
@@ -58,6 +59,7 @@ export default function CreatorEditableFields<T extends EditableCreatorFields>({
           </div>
         )}
       </div>
+      <Field label="Portfolio URL" hint="Enter your main portfolio, website, or professional work page. This is one URL and is separate from Featured Work."><input type="url" value={value.portfolio_url || ""} onChange={(e) => set("portfolio_url", (e.target.value || null) as T["portfolio_url"])} placeholder="https://your-portfolio.example" className={input} /></Field>
       <Field label="Short Bio" hint="Appears under your name and categories in the profile hero."><textarea rows={3} value={value.short_bio || ""} onChange={(e) => set("short_bio", (e.target.value || null) as T["short_bio"])} placeholder="A short introduction to your content and audience." className={input} /></Field>
       <Field label="Full Bio / About" hint="Appears in the About the Creator section."><textarea rows={6} value={value.about || ""} onChange={(e) => set("about", (e.target.value || null) as T["about"])} placeholder="Tell brands about your work, audience, style, and experience." className={input} /></Field>
     </FormSection>
@@ -88,4 +90,4 @@ function Add({ onClick, label }: { onClick: () => void; label: string }) { retur
 function Remove({ onClick, label }: { onClick: () => void; label: string }) { return <button type="button" onClick={onClick} aria-label={label} className="rounded-xl p-3 text-red-500 hover:bg-red-50"><Trash2 size={17} /></button>; }
 function StringRepeater({ values, placeholder, addLabel, onChange }: { values: string[]; placeholder: string; addLabel: string; onChange: (values: string[]) => void }) { return <div className="space-y-3">{values.map((value, index) => <div key={index} className="flex gap-2"><input value={value} onChange={(e) => onChange(values.map((item, i) => i === index ? e.target.value : item))} placeholder={placeholder} className={input} /><Remove onClick={() => onChange(values.length === 1 ? [""] : values.filter((_, i) => i !== index))} label={`Remove ${placeholder}`} /></div>)}<Add onClick={() => onChange([...values, ""])} label={addLabel} /></div>; }
 
-export const emptyEditableProfile = (): EditableCreatorFields => ({ display_name: "", email: "", whatsapp: null, profile_image_url: null, short_bio: null, about: null, city: null, region: null, socials: [{ platform: "", handle: "", profile_url: "", follower_count: 0, display_order: 0 }], categories: [""], expertise: [""], collaboration_types: [""], featured_work: [] });
+export const emptyEditableProfile = (): EditableCreatorFields => ({ display_name: "", email: "", whatsapp: null, profile_image_url: null, portfolio_url: null, short_bio: null, about: null, city: null, region: null, socials: [{ platform: "", handle: "", profile_url: "", follower_count: 0, display_order: 0 }], categories: [""], expertise: [""], collaboration_types: [""], featured_work: [] });

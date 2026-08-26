@@ -78,6 +78,7 @@ function api_creator_with_children(PDO $pdo, array $row, bool $includePrivate): 
         'name' => $row['display_name'],
         'slug' => $row['slug'],
         'profile_image_url' => $row['profile_image_url'],
+        'portfolio_url' => $row['portfolio_url'],
         'short_bio' => $row['short_bio'],
         'about' => $row['about'],
         'city' => $row['city'],
@@ -161,7 +162,7 @@ function api_creators_update(PDO $pdo, string $id, array $input): array
 function api_creators_self_update(PDO $pdo, string $id, array $input): array
 {
     $existing = api_creators_find($pdo, $id, false);
-    $allowed = ['display_name', 'email', 'whatsapp', 'profile_image_url', 'short_bio', 'about', 'city', 'region', 'socials', 'categories', 'expertise', 'collaboration_types', 'featured_work'];
+    $allowed = ['display_name', 'email', 'whatsapp', 'profile_image_url', 'portfolio_url', 'short_bio', 'about', 'city', 'region', 'socials', 'categories', 'expertise', 'collaboration_types', 'featured_work'];
     $safe = array_intersect_key($input, array_flip($allowed));
     $payload = api_creator_payload($safe, $existing, false);
     api_creator_assert_email_available($pdo, $payload['email'], $id);
@@ -200,6 +201,7 @@ function api_creator_payload(array $input, ?array $existing = null, bool $adminC
         'whatsapp' => Validation::nullableString($source, 'whatsapp', 100),
         'slug' => Validation::slug($slugValue, 'slug'),
         'profile_image_url' => Validation::url($source, 'profile_image_url', true),
+        'portfolio_url' => Validation::url($source, 'portfolio_url'),
         'short_bio' => Validation::nullableString($source, 'short_bio', 5000),
         'about' => Validation::nullableString($source, 'about', 100000),
         'city' => Validation::nullableString($source, 'city', 191),
@@ -354,10 +356,10 @@ function api_creator_assert_email_available(PDO $pdo, string $email, ?string $ig
 function api_creators_insert(PDO $pdo, string $id, array $payload): void
 {
     $statement = $pdo->prepare('INSERT INTO creators
-        (id, full_name, display_name, email, whatsapp, slug, profile_image_url, short_bio, about, city, region,
+        (id, full_name, display_name, email, whatsapp, slug, profile_image_url, portfolio_url, short_bio, about, city, region,
          followers, followers_override, engagement_rate, compatibility_score, is_verified, status, display_order, approved_at)
         VALUES
-        (:id, :full_name, :display_name, :email, :whatsapp, :slug, :profile_image_url, :short_bio, :about, :city, :region,
+        (:id, :full_name, :display_name, :email, :whatsapp, :slug, :profile_image_url, :portfolio_url, :short_bio, :about, :city, :region,
          0, :followers_override, :engagement_rate, :compatibility_score, :is_verified, :status, :display_order, :approved_at)');
     $statement->execute(array_merge(['id' => $id], api_creator_parent_parameters($payload)));
 }
@@ -365,7 +367,7 @@ function api_creators_insert(PDO $pdo, string $id, array $payload): void
 function api_creators_update_parent(PDO $pdo, string $id, array $payload): void
 {
     $statement = $pdo->prepare('UPDATE creators SET full_name=:full_name, display_name=:display_name, email=:email,
-        whatsapp=:whatsapp, slug=:slug, profile_image_url=:profile_image_url, short_bio=:short_bio, about=:about,
+        whatsapp=:whatsapp, slug=:slug, profile_image_url=:profile_image_url, portfolio_url=:portfolio_url, short_bio=:short_bio, about=:about,
         city=:city, region=:region, followers_override=:followers_override, engagement_rate=:engagement_rate,
         compatibility_score=:compatibility_score, is_verified=:is_verified, status=:status,
         display_order=:display_order, approved_at=:approved_at WHERE id=:id');
@@ -377,7 +379,7 @@ function api_creator_parent_parameters(array $payload): array
     return [
         'full_name'=>$payload['full_name'], 'display_name'=>$payload['display_name'], 'email'=>$payload['email'],
         'whatsapp'=>$payload['whatsapp'], 'slug'=>$payload['slug'], 'profile_image_url'=>$payload['profile_image_url'],
-        'short_bio'=>$payload['short_bio'], 'about'=>$payload['about'], 'city'=>$payload['city'], 'region'=>$payload['region'],
+        'portfolio_url'=>$payload['portfolio_url'], 'short_bio'=>$payload['short_bio'], 'about'=>$payload['about'], 'city'=>$payload['city'], 'region'=>$payload['region'],
         'followers_override'=>$payload['followers_override'], 'engagement_rate'=>$payload['engagement_rate'],
         'compatibility_score'=>$payload['compatibility_score'], 'is_verified'=>$payload['is_verified'] ? 1 : 0,
         'status'=>$payload['status'], 'display_order'=>$payload['display_order'], 'approved_at'=>$payload['approved_at'],

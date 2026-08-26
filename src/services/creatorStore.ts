@@ -25,6 +25,7 @@ export interface CreatorRecord {
   whatsapp?: string | null;
   slug: string;
   profile_image_url: string | null;
+  portfolio_url: string | null;
   short_bio: string | null;
   about: string | null;
   city: string | null;
@@ -54,6 +55,7 @@ export interface CreatorInput {
   whatsapp: string | null;
   slug: string;
   profile_image_url: string | null;
+  portfolio_url: string | null;
   short_bio: string | null;
   about: string | null;
   city: string | null;
@@ -72,7 +74,7 @@ export interface CreatorInput {
 }
 
 export type CreatorSelfInput = Pick<CreatorInput,
-  "display_name" | "email" | "whatsapp" | "profile_image_url" | "short_bio" | "about" |
+  "display_name" | "email" | "whatsapp" | "profile_image_url" | "portfolio_url" | "short_bio" | "about" |
   "city" | "region" | "socials" | "categories" | "expertise" | "collaboration_types" | "featured_work"
 >;
 
@@ -87,6 +89,7 @@ export interface CreatorApplication {
   email: string;
   whatsapp: string | null;
   profile_image_url: string | null;
+  portfolio_url: string | null;
   short_bio: string | null;
   about: string | null;
   city: string | null;

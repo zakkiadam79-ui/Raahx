@@ -14,6 +14,7 @@ function api_creator_application_payload(array $input): array
         'email'=>Validation::email($input, 'email'),
         'whatsapp'=>Validation::nullableString($input, 'whatsapp', 100),
         'profile_image_url'=>Validation::url($input, 'profile_image_url', true),
+        'portfolio_url'=>Validation::url($input, 'portfolio_url'),
         'short_bio'=>Validation::nullableString($input, 'short_bio', 5000),
         'about'=>Validation::nullableString($input, 'about', 100000),
         'city'=>Validation::nullableString($input, 'city', 191),
@@ -33,8 +34,8 @@ function api_creator_applications_submit(PDO $pdo, array $input, array $config):
     if ($duplicate->fetchColumn() !== false) throw new ApiException(409, 'APPLICATION_PENDING', 'A pending Creator application already exists for this email.');
     $id = raahx_new_id('creator-application');
     $statement = $pdo->prepare('INSERT INTO creator_applications
-        (id, full_name, display_name, email, whatsapp, profile_image_url, short_bio, about, city, region, submitted_payload, status)
-        VALUES (:id,:full_name,:display_name,:email,:whatsapp,:profile_image_url,:short_bio,:about,:city,:region,:submitted_payload,\'pending\')');
+        (id, full_name, display_name, email, whatsapp, profile_image_url, portfolio_url, short_bio, about, city, region, submitted_payload, status)
+        VALUES (:id,:full_name,:display_name,:email,:whatsapp,:profile_image_url,:portfolio_url,:short_bio,:about,:city,:region,:submitted_payload,\'pending\')');
     $params = $payload;
     $params['id'] = $id;
     $params['submitted_payload'] = json_encode($payload['submitted_payload'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -96,6 +97,7 @@ function api_creator_applications_approve(PDO $pdo, string $id, array $input, ar
         if (!in_array($status, ['published','hidden'], true)) throw new ApiException(400, 'VALIDATION_ERROR', 'status must be published or hidden.');
         $approvedAt = date('Y-m-d H:i:s');
         $creatorInput = array_merge($submitted, $submitted['submitted_payload'], [
+            'portfolio_url'=>$submitted['portfolio_url'],
             'slug'=>$slug, 'status'=>$status, 'display_order'=>api_creator_next_display_order($pdo),
             'engagement_rate'=>$input['engagement_rate'] ?? 0, 'compatibility_score'=>$input['compatibility_score'] ?? null,
             'is_verified'=>$input['is_verified'] ?? false, 'followers_override'=>$input['followers_override'] ?? null,

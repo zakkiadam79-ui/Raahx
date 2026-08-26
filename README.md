@@ -1,20 +1,34 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# RaahX
 
-# Run and deploy your AI Studio app
+## Run locally
 
-This contains everything you need to run your app locally.
+Prerequisites:
 
-View your app in AI Studio: https://ai.studio/apps/4233e71a-660a-4626-a335-83af20b323a5
+- Node.js 20+
+- PHP 8+ with PDO MySQL enabled
+- Access to a development MySQL database when testing API-backed features
 
-## Run Locally
+1. Install the locked frontend dependencies:
 
-**Prerequisites:**  Node.js
+   ```bash
+   npm ci
+   ```
 
+2. Configure the existing PHP API for your local development database by
+   copying `api/config/config.example.php` to the ignored
+   `api/config/config.php`, or export the documented `RAAHX_*` environment
+   variables. Never commit credentials.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+3. Start the frontend and the existing PHP API together:
+
+   ```bash
+   npm run dev
+   ```
+
+`npm run dev` starts PHP on `127.0.0.1:8000` and Vite on its normal development
+port. Vite proxies same-origin browser requests from `/api/*` to that PHP
+process. Production continues to use `/api` through Apache/LiteSpeed and
+`api/.htaccess`; no production API URL changes are required.
+
+To run either process separately, use `npm run dev:frontend` or
+`npm run dev:api`.
