@@ -1,29 +1,16 @@
-import { ArrowUpRight, BadgeCheck, Heart, Instagram, MapPin } from "lucide-react";
+import { ArrowRight, BadgeCheck, Heart, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { CreatorRecord } from "../../services/creatorStore";
+import CreatorImage from "./CreatorImage";
+import CreatorPlatformIcon from "./CreatorPlatformIcon";
 
-const formatCount = (count: number) => count >= 1_000_000 ? `${(count / 1_000_000).toFixed(1).replace(".0", "")}M` : count >= 1_000 ? `${Math.round(count / 1_000)}K` : String(count);
-
-export default function CreatorCard({ creator, saved, onSave, list = false }: { creator: CreatorRecord; saved: boolean; onSave: () => void; list?: boolean }) {
-  const instagram = creator.socials.find((social) => social.platform.toLowerCase() === "instagram");
-  return (
-    <article className={`group overflow-hidden rounded-2xl border border-gray-100 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${list ? "sm:flex" : ""}`}>
-      <div className={`relative overflow-hidden bg-slate-100 ${list ? "h-64 sm:h-auto sm:w-56 shrink-0" : "h-64"}`}>
-        <img src={creator.profile_image_url || "/logo.png"} alt={creator.display_name} width={600} height={760} loading="lazy" decoding="async" onError={(event) => { event.currentTarget.src = "/logo.png"; }} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-        {creator.is_verified && <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-primary shadow-sm"><BadgeCheck size={13} /> Verified</span>}
-        <button type="button" onClick={onSave} aria-label={saved ? `Remove ${creator.display_name} from saved creators` : `Save ${creator.display_name}`} className={`absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/95 shadow-sm ${saved ? "text-rose-500" : "text-gray-500 hover:text-rose-500"}`}><Heart size={16} fill={saved ? "currentColor" : "none"} /></button>
-        {creator.categories[0] && <span className="absolute bottom-3 left-3 rounded-full bg-secondary/85 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">{creator.categories[0]}</span>}
-      </div>
-      <div className="flex flex-1 flex-col p-5">
-        <h2 className="font-heading text-lg font-bold text-secondary">{creator.display_name}</h2>
-        <p className="mt-1 flex items-center gap-1 text-xs text-gray-500"><MapPin size={13} className="text-primary" /> {creator.city || "Location not listed"}{creator.region ? `, ${creator.region}` : ""}</p>
-        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-gray-600">{creator.short_bio || "Creator profile"}</p>
-        <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
-          {instagram ? <a href={instagram.profile_url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${creator.display_name} on Instagram`} className="flex items-center gap-1.5 text-sm font-semibold text-secondary hover:text-primary"><Instagram size={15} className="text-primary" /> {formatCount(creator.followers)}</a> : <span className="text-sm font-semibold text-secondary">{formatCount(creator.followers)} followers</span>}
-          <span className="text-xs text-gray-500">{creator.engagement_rate}% engagement</span>
-        </div>
-        <Link to={`/creator-network/${creator.id}`} className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark">View Profile <ArrowUpRight size={15} /></Link>
-      </div>
-    </article>
-  );
+const formatCount=(n:number)=>n>=1e6?`${(n/1e6).toFixed(1).replace('.0','')}M`:n>=1e3?`${Math.round(n/1e3)}K`:String(n);
+export default function CreatorCard({creator,saved,onSave,list=false}:{creator:CreatorRecord;saved:boolean;onSave:()=>void;list?:boolean}){
+ return <article className={`group overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl ${list?'sm:flex':''}`}>
+  <div className={`relative shrink-0 ${list?'h-64 sm:h-auto sm:w-56':'aspect-[4/3]'}`}><CreatorImage src={creator.profile_image_url} alt={creator.display_name} className="h-full w-full"/>{creator.is_verified&&<span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-white shadow"><BadgeCheck size={12}/>Verified</span>}<button type="button" onClick={onSave} aria-label={saved?`Remove ${creator.display_name} from favorites`:`Favorite ${creator.display_name}`} aria-pressed={saved} className={`absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white shadow ${saved?'text-rose-500':'text-gray-600'}`}><Heart size={16} fill={saved?'currentColor':'none'}/></button>{creator.categories[0]&&<span className="absolute bottom-3 left-3 rounded-full bg-white px-3 py-1 text-[10px] font-bold text-secondary shadow">{creator.categories[0]}</span>}</div>
+  <div className="flex flex-1 flex-col p-4"><h2 className="truncate font-heading text-base font-bold text-secondary">{creator.display_name}</h2><p className="mt-1 flex items-center gap-1 truncate text-xs text-gray-500"><MapPin size={12} className="text-primary"/>{creator.city||"Location not listed"}{creator.region?`, ${creator.region}`:""}</p><p className="mt-3 line-clamp-2 text-xs leading-5 text-gray-500">{creator.short_bio||"Creator profile"}</p>
+   <div className="mt-4 flex min-h-6 flex-wrap items-center gap-x-3 gap-y-2">{creator.socials.slice(0,3).map((social,index)=><a key={`${social.profile_url}-${index}`} href={social.profile_url} target="_blank" rel="noopener noreferrer" title={`${social.platform}: ${formatCount(social.follower_count)}`} className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-700 hover:text-primary"><CreatorPlatformIcon platform={social.platform} size={13}/>{formatCount(social.follower_count)}</a>)}</div>
+   <Link to={`/creator-network/${creator.id}`} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-4 py-2.5 text-xs font-bold text-primary transition hover:bg-primary hover:text-white">View Profile <ArrowRight size={14}/></Link>
+  </div>
+ </article>;
 }

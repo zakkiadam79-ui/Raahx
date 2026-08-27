@@ -1,9 +1,10 @@
 import type { CreatorFeaturedWork } from "../services/creatorStore";
 
-export const CREATOR_FALLBACK_IMAGE = "/logo.png";
+export const CREATOR_FALLBACK_IMAGE = null;
 
 function validHttpUrl(value: string | null | undefined): string | null {
   if (!value) return null;
+  if (/^\/(?!\/)/.test(value)) return value;
   try {
     const url = new URL(value);
     return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
@@ -64,10 +65,10 @@ function dailymotionVideoId(workUrl: string): string | null {
  * Returns an image safe for browser display without fetching or inspecting the
  * work URL server-side. Explicit thumbnail_url always wins. Only providers
  * with deterministic, allowlisted image URLs are resolved automatically;
- * Facebook, Instagram, TikTok, WhatsApp, and unknown hosts use the local
- * fallback rather than an invented or scraped URL.
+ * Facebook, Instagram, TikTok, WhatsApp, and unknown hosts return no image so
+ * the UI can render a neutral media placeholder rather than fake artwork.
  */
-export function getCreatorWorkThumbnail(work: Pick<CreatorFeaturedWork, "work_url" | "thumbnail_url">): string {
+export function getCreatorWorkThumbnail(work: Pick<CreatorFeaturedWork, "work_url" | "thumbnail_url">): string | null {
   const explicit = validHttpUrl(work.thumbnail_url);
   if (explicit) return explicit;
 
