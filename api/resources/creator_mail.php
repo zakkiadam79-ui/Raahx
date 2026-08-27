@@ -80,5 +80,6 @@ function api_creator_collaboration_mail_messages(array $config, array $request, 
     return [
         ['from'=>$from, 'to'=>[$creator['email']], 'reply_to'=>$request['email'], 'subject'=>'New Collaboration Request via RaahX', 'html'=>'<h2>A brand wants to collaborate with you</h2>' . $details],
         ['from'=>$from, 'to'=>[$admin], 'reply_to'=>$request['email'], 'subject'=>'Creator Collaboration Request - ' . $creator['display_name'], 'html'=>'<h2>New Creator Collaboration Request</h2>' . $details],
+        ['from'=>$from, 'to'=>[$request['email']], 'subject'=>'We Received Your Collaboration Request - RaahX', 'html'=>sprintf('<p>Hello %s,</p><p>Thank you for your collaboration request for %s.</p><p>The Creator and RaahX team have received your campaign details. The Creator will reach out to you soon using the contact information you provided.</p><br><p>— The RaahX Team</p>', api_creator_html($request['requester_name']), api_creator_html($creator['display_name']))],
     ];
 }

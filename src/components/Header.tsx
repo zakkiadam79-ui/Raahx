@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import logoImage from "../assets/images/logo.webp";
@@ -13,6 +13,8 @@ import {
 import { getServiceIcon } from "../utils/getServiceIcon";
 
 export default function Header() {
+  const location = useLocation();
+  const creatorRouteActive = location.pathname.startsWith("/creator-network");
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
@@ -219,7 +221,8 @@ export default function Header() {
 
             <Link
               to="/creator-network"
-              className="text-[15px] font-medium text-gray-700 hover:text-primary transition-colors"
+              className={cn("border-b-2 py-1 text-[15px] font-medium transition-colors", creatorRouteActive ? "border-primary text-primary" : "border-transparent text-gray-700 hover:text-primary")}
+              aria-current={creatorRouteActive ? "page" : undefined}
             >
               Creator Network
             </Link>
@@ -350,7 +353,8 @@ export default function Header() {
           <Link
             to="/creator-network"
             onClick={() => setMobileMenuOpen(false)}
-            className="text-xl font-heading font-medium text-secondary"
+            className={cn("text-xl font-heading font-medium", creatorRouteActive ? "text-primary" : "text-secondary")}
+            aria-current={creatorRouteActive ? "page" : undefined}
           >
             Creator Network
           </Link>
