@@ -289,7 +289,7 @@ function api_dispatch_creators(PDO $pdo, array $config, string $method, array $s
         }
         if (count($segments) === 2 && $method === 'GET') {
             $id = Validation::id(['id' => $segments[1]]);
-            Http::json(api_creators_find($pdo, $id ?? '', false));
+            Http::json(api_creator_admin_record($pdo, api_creators_find($pdo, $id ?? '', false), $config));
         }
         if (count($segments) === 1 || count($segments) === 2) {
             Http::methodNotAllowed(['GET']);
@@ -301,7 +301,7 @@ function api_dispatch_creators(PDO $pdo, array $config, string $method, array $s
         if ($method === 'GET') Http::json(api_creators_list($pdo, $_GET, true));
         if ($method === 'POST') {
             $authenticated();
-            Http::json(api_creators_create($pdo, $body), 201);
+            Http::json(api_creators_create($pdo, $body, $config), 201);
         }
         Http::methodNotAllowed(['GET', 'POST']);
     }
@@ -311,7 +311,7 @@ function api_dispatch_creators(PDO $pdo, array $config, string $method, array $s
         if ($method === 'GET') Http::json(api_creators_find($pdo, $id ?? '', true));
         if ($method === 'PUT') {
             $authenticated();
-            Http::json(api_creators_update($pdo, $id ?? '', $body));
+            Http::json(api_creators_update($pdo, $id ?? '', $body, $config));
         }
         if ($method === 'DELETE') {
             $authenticated();
@@ -338,7 +338,7 @@ function api_dispatch_creator_applications(PDO $pdo, array $config, string $meth
         Http::json(api_creator_applications_list($pdo, $_GET));
     }
     if (count($segments) === 2 && $method === 'GET') {
-        Http::json(api_creator_applications_find($pdo, Validation::id(['id'=>$segments[1]]) ?? ''));
+        Http::json(api_creator_applications_admin_find($pdo, Validation::id(['id'=>$segments[1]]) ?? '', $config));
     }
     if (count($segments) === 3 && $method === 'POST') {
         $id = Validation::id(['id'=>$segments[1]]) ?? '';

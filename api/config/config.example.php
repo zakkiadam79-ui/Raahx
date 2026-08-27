@@ -16,6 +16,8 @@ return [
         'https://replace-with-raahx-domain.example',
     ],
     'admin_secret_env' => 'ADMIN_SECRET',
+    // Name of the server-only environment variable containing the CNIC encryption key.
+    'creator_pii_key_env' => 'CREATOR_PII_KEY',
     'session' => [
         'cookie_name' => 'raahx_php_session',
         'ttl_seconds' => 28800,

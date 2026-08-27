@@ -120,6 +120,12 @@ function api_creator_with_children(PDO $pdo, array $row, bool $includePrivate): 
     return $result;
 }
 
+function api_creator_admin_record(PDO $pdo, array $creator, array $config): array
+{
+    $creator['private_data'] = api_creator_private_for_creator($pdo, (string) $creator['id'], $config);
+    return $creator;
+}
+
 function api_creator_child_rows(PDO $pdo, string $table, string $creatorId, string $columns): array
 {
     $allowed = ['creator_socials', 'creator_categories', 'creator_expertise', 'creator_collaboration_types', 'creator_featured_work', 'creator_brand_love_points'];
@@ -129,7 +135,7 @@ function api_creator_child_rows(PDO $pdo, string $table, string $creatorId, stri
     return $statement->fetchAll();
 }
 
-function api_creators_create(PDO $pdo, array $input): array
+function api_creators_create(PDO $pdo, array $input, array $config): array
 {
     $payload = api_creator_payload($input, null, true);
     $id = Validation::id($input, 'id', false) ?? raahx_new_id('creator');
@@ -139,15 +145,16 @@ function api_creators_create(PDO $pdo, array $input): array
     try {
         api_creators_insert($pdo, $id, $payload);
         api_creators_replace_children($pdo, $id, $payload);
+        api_creator_private_upsert_creator($pdo, $id, $input, $config);
         $pdo->commit();
     } catch (Throwable $exception) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         throw api_creator_storage_exception($exception);
     }
-    return api_creators_find($pdo, $id, false);
+    return api_creator_admin_record($pdo, api_creators_find($pdo, $id, false), $config);
 }
 
-function api_creators_update(PDO $pdo, string $id, array $input): array
+function api_creators_update(PDO $pdo, string $id, array $input, array $config): array
 {
     $existing = api_creators_find($pdo, $id, false);
     $payload = api_creator_payload($input, $existing, true);
@@ -157,12 +164,13 @@ function api_creators_update(PDO $pdo, string $id, array $input): array
     try {
         api_creators_update_parent($pdo, $id, $payload);
         api_creators_replace_children($pdo, $id, $payload);
+        api_creator_private_upsert_creator($pdo, $id, $input, $config);
         $pdo->commit();
     } catch (Throwable $exception) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         throw api_creator_storage_exception($exception);
     }
-    return api_creators_find($pdo, $id, false);
+    return api_creator_admin_record($pdo, api_creators_find($pdo, $id, false), $config);
 }
 
 function api_creators_self_update(PDO $pdo, string $id, array $input): array

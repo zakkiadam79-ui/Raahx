@@ -12,6 +12,7 @@ require_once __DIR__ . '/../resources/blogs.php';
 require_once __DIR__ . '/../resources/case_studies.php';
 require_once __DIR__ . '/../resources/creator_mail.php';
 require_once __DIR__ . '/../resources/creator_brand_icons.php';
+require_once __DIR__ . '/../resources/creator_private.php';
 require_once __DIR__ . '/../resources/creators.php';
 require_once __DIR__ . '/../resources/creator_access.php';
 require_once __DIR__ . '/../resources/creator_applications.php';
@@ -65,6 +66,7 @@ function raahx_config(): array
             )),
         ), static fn (string $origin): bool => $origin !== '')),
         'admin_secret_env' => raahx_env('RAAHX_ADMIN_SECRET_ENV', 'ADMIN_SECRET'),
+        'creator_pii_key_env' => raahx_env('RAAHX_CREATOR_PII_KEY_ENV', 'CREATOR_PII_KEY'),
         'session' => [
             'cookie_name' => raahx_env('RAAHX_SESSION_COOKIE', 'raahx_php_session'),
             'ttl_seconds' => (int) raahx_env('RAAHX_SESSION_TTL', '28800'),

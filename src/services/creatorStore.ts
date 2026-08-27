@@ -24,6 +24,14 @@ export interface CreatorBrandLovePoint {
   display_order: number;
 }
 
+export interface CreatorPrivateData {
+  cnic: string | null;
+  cnic_last4: string | null;
+  pricing_min: number | null;
+  pricing_max: number | null;
+  pricing_currency: string | null;
+}
+
 export interface CreatorRecord {
   id: string;
   display_name: string;
@@ -56,6 +64,7 @@ export interface CreatorRecord {
   brand_love_points: CreatorBrandLovePoint[];
   created_at?: string;
   updated_at?: string;
+  private_data?: CreatorPrivateData;
 }
 
 export interface CreatorInput {
@@ -77,6 +86,10 @@ export interface CreatorInput {
   is_verified: boolean;
   status: "published" | "hidden";
   display_order: number;
+  cnic?: string | null;
+  pricing_min?: number | null;
+  pricing_max?: number | null;
+  pricing_currency?: string | null;
   socials: CreatorSocialRecord[];
   categories: string[];
   expertise: string[];
@@ -92,6 +105,10 @@ export type CreatorSelfInput = Pick<CreatorInput,
 
 export interface CreatorApplicationInput extends CreatorSelfInput {
   full_name: string;
+  cnic: string;
+  pricing_min: number | null;
+  pricing_max: number | null;
+  pricing_currency: string | null;
 }
 
 export interface CreatorApplication {
@@ -120,6 +137,7 @@ export interface CreatorApplication {
   approved_creator_id: string | null;
   created_at: string;
   updated_at: string;
+  private_data?: CreatorPrivateData;
 }
 
 export interface CollaborationRequestInput {

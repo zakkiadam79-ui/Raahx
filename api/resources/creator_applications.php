@@ -34,13 +34,21 @@ function api_creator_applications_submit(PDO $pdo, array $input, array $config):
     $duplicate->execute(['email'=>$payload['email']]);
     if ($duplicate->fetchColumn() !== false) throw new ApiException(409, 'APPLICATION_PENDING', 'A pending Creator application already exists for this email.');
     $id = raahx_new_id('creator-application');
-    $statement = $pdo->prepare('INSERT INTO creator_applications
-        (id, full_name, display_name, email, whatsapp, profile_image_url, portfolio_url, short_bio, about, city, region, submitted_payload, status)
-        VALUES (:id,:full_name,:display_name,:email,:whatsapp,:profile_image_url,:portfolio_url,:short_bio,:about,:city,:region,:submitted_payload,\'pending\')');
-    $params = $payload;
-    $params['id'] = $id;
-    $params['submitted_payload'] = json_encode($payload['submitted_payload'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    $statement->execute($params);
+    $pdo->beginTransaction();
+    try {
+        $statement = $pdo->prepare('INSERT INTO creator_applications
+            (id, full_name, display_name, email, whatsapp, profile_image_url, portfolio_url, short_bio, about, city, region, submitted_payload, status)
+            VALUES (:id,:full_name,:display_name,:email,:whatsapp,:profile_image_url,:portfolio_url,:short_bio,:about,:city,:region,:submitted_payload,\'pending\')');
+        $params = $payload;
+        $params['id'] = $id;
+        $params['submitted_payload'] = json_encode($payload['submitted_payload'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $statement->execute($params);
+        api_creator_private_store_application($pdo, $id, $input, $config);
+        $pdo->commit();
+    } catch (Throwable $exception) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $exception;
+    }
     $application = api_creator_applications_find($pdo, $id);
     api_creator_mail_send_all($config, api_creator_application_mail_messages($config, $application));
     return ['id'=>$id, 'status'=>'pending', 'message'=>'Creator application submitted for review.'];
@@ -67,6 +75,13 @@ function api_creator_applications_find(PDO $pdo, string $id, bool $forUpdate = f
     $row = $statement->fetch();
     if (!is_array($row)) throw new ApiException(404, 'NOT_FOUND', 'Creator application not found.');
     return api_creator_application_record($row);
+}
+
+function api_creator_applications_admin_find(PDO $pdo, string $id, array $config): array
+{
+    $application = api_creator_applications_find($pdo, $id);
+    $application['private_data'] = api_creator_private_for_application($pdo, $id, $config);
+    return $application;
 }
 
 function api_creator_application_record(array $row): array
@@ -108,6 +123,7 @@ function api_creator_applications_approve(PDO $pdo, string $id, array $input, ar
         $creatorPayload = api_creator_payload($creatorInput, null, true);
         api_creators_insert($pdo, $creatorId, $creatorPayload);
         api_creators_replace_children($pdo, $creatorId, $creatorPayload);
+        api_creator_private_copy_application($pdo, $id, $creatorId);
         $rawToken = api_creator_access_issue($pdo, $creatorId);
         $update = $pdo->prepare("UPDATE creator_applications SET status='approved', admin_notes=:admin_notes, reviewed_by='admin-session', reviewed_at=CURRENT_TIMESTAMP, approved_creator_id=:creator_id WHERE id=:id");
         $update->execute(['admin_notes'=>Validation::nullableString($input, 'admin_notes', 100000), 'creator_id'=>$creatorId, 'id'=>$id]);

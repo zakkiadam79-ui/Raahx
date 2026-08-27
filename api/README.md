@@ -25,6 +25,8 @@ Supported environment variables include:
 - `RAAHX_SESSION_COOKIE`
 - `RAAHX_SESSION_TTL`
 - `ADMIN_SECRET`
+- `CREATOR_PII_KEY` (minimum 32 random characters; server-only CNIC encryption key)
+- `RAAHX_CREATOR_PII_KEY_ENV` (optional alternate environment-variable name)
 - `APP_URL`
 - `SMTP_HOST`
 - `SMTP_PORT`
@@ -95,6 +97,16 @@ before importing. Imports upsert records by preserved IDs inside one
 transaction and do not delete parents missing from the payload.
 
 All responses use `{ "success": true, "data": ... }` or a structured error response.
+
+## Creator private data
+
+Creator CNIC and pricing values are isolated from public profile tables in
+`creator_private_data` and `creator_application_private_data`. CNIC values are
+normalized to 13 digits and encrypted with AES-256-GCM using the server-only
+`CREATOR_PII_KEY`; only the last four digits are stored separately for private
+Admin identification. Public Creator serializers never query or return these
+tables. Back up the encryption key securely—losing it makes existing CNIC
+ciphertext unrecoverable.
 
 ## Creator media storage
 
