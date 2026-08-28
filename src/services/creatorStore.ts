@@ -231,7 +231,12 @@ function query(filters: CreatorFilters): string {
 }
 
 export function creatorError(error: unknown): string {
-  if (error instanceof CreatorApiError) return error.message;
+  if (error instanceof CreatorApiError) {
+    if (error.code === "CREATOR_PII_NOT_CONFIGURED") {
+      return "Creator applications are temporarily unavailable while secure private-data storage is being configured. Please contact RaahX or try again later.";
+    }
+    return error.message;
+  }
   return "The Creator service is temporarily unavailable.";
 }
 

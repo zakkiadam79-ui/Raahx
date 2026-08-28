@@ -10,8 +10,9 @@ The production React frontend uses this API for application data, newsletter sub
 2. Copy `config/config.example.php` to `config/config.php` on the PHP host, or provide the equivalent environment variables.
 3. Set the server-only `ADMIN_SECRET` environment variable.
 4. Configure `RAAHX_ALLOWED_ORIGINS` with the real production frontend origin. Comma-separated localhost origins are used by default for development.
+5. Configure a separate Creator CNIC encryption key. Prefer a `CREATOR_PII_KEY` server environment variable. On Hostinger/shared hosting where PHP environment variables are unavailable, set `creator_pii_key` in the ignored `api/config/config.php` file instead.
 
-`config/config.php` is ignored by Git. Never commit it or any real credentials.
+`config/config.php` is ignored by Git. Never commit it or any real credentials. The Creator PII key must contain at least 32 random characters and must be backed up securely. For example, generate a key on a trusted machine with `php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'`; do not run this command repeatedly after encrypted Creator data already exists, because changing the key makes existing CNIC ciphertext unreadable.
 
 Supported environment variables include:
 

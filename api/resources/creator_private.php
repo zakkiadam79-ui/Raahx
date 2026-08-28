@@ -4,8 +4,12 @@ declare(strict_types=1);
 function api_creator_private_key(array $config): string
 {
     $name = (string) ($config['creator_pii_key_env'] ?? 'CREATOR_PII_KEY');
-    $secret = getenv($name);
-    if ($secret === false || strlen($secret) < 32) {
+    $environmentSecret = getenv($name);
+    $configuredSecret = $config['creator_pii_key'] ?? null;
+    $secret = $environmentSecret !== false && $environmentSecret !== ''
+        ? $environmentSecret
+        : $configuredSecret;
+    if (!is_string($secret) || strlen($secret) < 32) {
         throw new ApiException(503, 'CREATOR_PII_NOT_CONFIGURED', 'Private Creator data protection is not configured.');
     }
     return hash('sha256', $secret, true);

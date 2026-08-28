@@ -16,8 +16,12 @@ return [
         'https://replace-with-raahx-domain.example',
     ],
     'admin_secret_env' => 'ADMIN_SECRET',
-    // Name of the server-only environment variable containing the CNIC encryption key.
+    // Preferred: name of the server-only environment variable containing the CNIC encryption key.
     'creator_pii_key_env' => 'CREATOR_PII_KEY',
+    // Hostinger/shared-hosting fallback: put the same minimum-32-character secret
+    // directly in the ignored config.php file when server environment variables
+    // are unavailable. Never add the real value to this example or to Git.
+    'creator_pii_key' => null,
     'session' => [
         'cookie_name' => 'raahx_php_session',
         'ttl_seconds' => 28800,
