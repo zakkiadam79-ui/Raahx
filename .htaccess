@@ -33,7 +33,9 @@ RewriteRule ^api(?:/|$) - [L]
 
 # Serve Creator profile HTML through the lightweight metadata renderer so
 # social crawlers receive the Creator name, bio, image, and canonical URL.
-# Join/edit routes do not match this creator-* pattern.
+# Join/edit routes do not match this creator-* pattern. If the separately
+# deployed renderer is absent, continue to the normal SPA fallback below.
+RewriteCond %{DOCUMENT_ROOT}/creator-profile.php -f
 RewriteRule ^creator-network/(creator-[A-Za-z0-9-]+)/?$ creator-profile.php?creator=$1 [L,QSA]
 
 # Serve existing files and directories normally.
