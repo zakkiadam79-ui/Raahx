@@ -240,8 +240,17 @@ export function creatorError(error: unknown): string {
   return "The Creator service is temporarily unavailable.";
 }
 
+export function creatorProfileSegment(creator: Pick<CreatorRecord, "slug">): string {
+  const slug = creator.slug.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return `creator-${slug || "profile"}`;
+}
+
+export function creatorProfilePath(creator: Pick<CreatorRecord, "slug">): string {
+  return `/creator-network/${creatorProfileSegment(creator)}`;
+}
+
 export const fetchPublicCreators = (filters: CreatorFilters = {}) => request<CreatorRecord[]>(`/creators${query(filters)}`);
-export const fetchPublicCreator = (id: string) => request<CreatorRecord>(`/creators/${encodeURIComponent(id)}`);
+export const fetchPublicCreator = (identifier: string) => request<CreatorRecord>(`/creators/${encodeURIComponent(identifier)}`);
 export const fetchAdminCreators = (filters: CreatorFilters = {}) => request<CreatorRecord[]>(`/creators/admin${query(filters)}`);
 export const fetchAdminCreator = (id: string) => request<CreatorRecord>(`/creators/admin/${encodeURIComponent(id)}`);
 export const createCreator = (input: CreatorInput) => request<CreatorRecord>("/creators", { method: "POST", body: JSON.stringify(input) });

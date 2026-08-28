@@ -307,8 +307,10 @@ function api_dispatch_creators(PDO $pdo, array $config, string $method, array $s
     }
 
     if (count($segments) === 1) {
+        if ($method === 'GET') {
+            Http::json(api_creators_find($pdo, api_creator_public_identifier($segments[0]), true));
+        }
         $id = Validation::id(['id' => $segments[0]]);
-        if ($method === 'GET') Http::json(api_creators_find($pdo, $id ?? '', true));
         if ($method === 'PUT') {
             $authenticated();
             Http::json(api_creators_update($pdo, $id ?? '', $body, $config));

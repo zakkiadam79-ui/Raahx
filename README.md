@@ -32,3 +32,19 @@ process. Production continues to use `/api` through Apache/LiteSpeed and
 
 To run either process separately, use `npm run dev:frontend` or
 `npm run dev:api`.
+
+## Production deployment layout
+
+`npm run build` creates the frontend in `dist`, but Vite does not copy the PHP
+API or Apache routing files. On Apache/LiteSpeed, deploy the **contents** of
+`dist` to the document root (so `index.html` is at `/index.html`) together with:
+
+- the repository root `.htaccess`
+- `creator-profile.php` (Creator social-preview metadata renderer)
+- the `api` directory and its `.htaccess`
+- the existing ignored `api/config/config.php` production configuration
+
+PHP 8 must provide PDO MySQL, mbstring, OpenSSL, and Fileinfo. The web-server
+user must be able to write to `api/uploads`, while configuration, library, and
+resource directories remain blocked by `api/.htaccess`. Do not deploy only the
+`dist` directory and assume GitHub has deployed the PHP/API files.

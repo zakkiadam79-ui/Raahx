@@ -31,6 +31,11 @@ RewriteRule ^ https://raahx.com%{REQUEST_URI} [R=301,L,NE]
 # Leave all API requests to api/.htaccess and api/index.php.
 RewriteRule ^api(?:/|$) - [L]
 
+# Serve Creator profile HTML through the lightweight metadata renderer so
+# social crawlers receive the Creator name, bio, image, and canonical URL.
+# Join/edit routes do not match this creator-* pattern.
+RewriteRule ^creator-network/(creator-[A-Za-z0-9-]+)/?$ creator-profile.php?creator=$1 [L,QSA]
+
 # Serve existing files and directories normally.
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d

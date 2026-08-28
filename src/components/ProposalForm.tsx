@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useSearchParams } from "react-router-dom";
 import { Loader2, CheckCircle2, ChevronDown, Check } from "lucide-react";
-import { serviceApiUrl } from "../services/serviceStore";
+import { fetchServicesFromApi, serviceApiUrl, type ServiceRecord } from "../services/serviceStore";
 import { cn } from "@/src/lib/utils";
 import logoImage from "../assets/images/logo.webp";
 
@@ -15,7 +15,7 @@ const formSchema = z.object({
   phone: z.string().min(10, "Valid phone number is required"),
   website: z.string().optional(),
   industry: z.string().min(2, "Industry is required"),
-  services: z.string().min(1, "Please select a service"),
+  services: z.array(z.string()).min(1, "Please select at least one service"),
   budget: z.string().min(1, "Budget is required"),
   timeline: z.string().min(1, "Timeline is required"),
   projectDetails: z.string().min(10, "Please provide some details (min 10 characters)"),
@@ -42,6 +42,9 @@ export default function ProposalForm({ sectionId = "proposal" }: { sectionId?: s
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [availableServices, setAvailableServices] = useState<ServiceRecord[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(true);
+  const [servicesError, setServicesError] = useState("");
   const [searchParams] = useSearchParams();
   const prefillEmail = searchParams.get("email") || "";
 
@@ -52,8 +55,25 @@ export default function ProposalForm({ sectionId = "proposal" }: { sectionId?: s
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { businessEmail: prefillEmail },
+    defaultValues: { businessEmail: prefillEmail, services: [] },
   });
+
+  useEffect(() => {
+    let active = true;
+    fetchServicesFromApi()
+      .then((services) => {
+        if (!active) return;
+        setAvailableServices(services);
+        setServicesError(services.length === 0 ? "No services are currently available." : "");
+      })
+      .catch(() => {
+        if (active) setServicesError("Services could not be loaded. Please refresh the page and try again.");
+      })
+      .finally(() => {
+        if (active) setServicesLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
@@ -223,34 +243,30 @@ export default function ProposalForm({ sectionId = "proposal" }: { sectionId?: s
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-1.5">
-                      <label htmlFor="services" className="text-sm font-medium text-gray-700">Services Required *</label>
-                      <div className="relative">
-                        <select
-                          id="services"
-                          {...register("services")}
-                          className={cn(
-                            "w-full px-4 py-3 rounded-xl bg-gray-50 border outline-none transition-all duration-200 focus:bg-white appearance-none",
-                            errors.services ? "border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/10" : "border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10"
-                          )}
-                        >
-                          <option value="">Select a service</option>
-                          <option value="Digital Marketing Services">Digital Marketing Services</option>
-                          <option value="Social Media Marketing">Social Media Marketing</option>
-                          <option value="SEO Services">SEO Services</option>
-                          <option value="Website Development">Website Development</option>
-                          <option value="App Development">App Development</option>
-                          <option value="Branding Services">Branding Services</option>
-                          <option value="Meta Advertising Services">Meta Advertising Services</option>
-                          <option value="AI Automation Services">AI Automation Services</option>
-                          <option value="Graphic Design Services">Graphic Design Services</option>
-                          <option value="Business Strategy & Growth Consulting">Business Strategy & Growth Consulting</option>
-                          <option value="Multiple Services">Multiple Services</option>
-                        </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+                    <fieldset className="space-y-1.5">
+                      <legend className="text-sm font-medium text-gray-700">Services Required *</legend>
+                      <div className={cn(
+                        "max-h-52 space-y-2 overflow-y-auto rounded-xl border bg-gray-50 p-3",
+                        errors.services ? "border-red-300" : "border-gray-200",
+                      )}>
+                        {servicesLoading ? (
+                          <p className="flex items-center gap-2 px-1 py-2 text-sm text-gray-500"><Loader2 className="h-4 w-4 animate-spin" />Loading services...</p>
+                        ) : servicesError ? (
+                          <p className="px-1 py-2 text-sm text-red-600" role="alert">{servicesError}</p>
+                        ) : availableServices.map((service) => (
+                          <label key={service.id || service.slug} className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm text-gray-700 transition-colors hover:bg-white">
+                            <input
+                              type="checkbox"
+                              value={service.name}
+                              {...register("services")}
+                              className="h-4 w-4 rounded border-gray-300 accent-primary focus:ring-2 focus:ring-primary/20"
+                            />
+                            <span>{service.name}</span>
+                          </label>
+                        ))}
                       </div>
                       {errors.services && <p className="text-xs text-red-500">{errors.services.message}</p>}
-                    </div>
+                    </fieldset>
 
                     <div className="space-y-1.5">
                       <label htmlFor="timeline" className="text-sm font-medium text-gray-700">Timeline *</label>

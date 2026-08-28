@@ -46,10 +46,23 @@ function api_creators_list(PDO $pdo, array $filters = [], bool $publishedOnly = 
     return array_map(static fn (array $row): array => api_creator_with_children($pdo, $row, !$publishedOnly), $statement->fetchAll());
 }
 
-function api_creators_find(PDO $pdo, string $id, bool $publishedOnly = true): array
+function api_creators_find(PDO $pdo, string $identifier, bool $publishedOnly = true): array
 {
-    $statement = $pdo->prepare('SELECT * FROM creators WHERE id = :id' . ($publishedOnly ? " AND status = 'published'" : '') . ' LIMIT 1');
-    $statement->execute(['id' => $id]);
+    $unprefixedSlug = str_starts_with($identifier, 'creator-')
+        ? substr($identifier, strlen('creator-'))
+        : $identifier;
+    $statement = $pdo->prepare(
+        'SELECT * FROM creators
+         WHERE (id = :creator_id OR slug = :exact_slug OR slug = :unprefixed_slug)'
+        . ($publishedOnly ? " AND status = 'published'" : '')
+        . ' ORDER BY (id = :preferred_id) DESC LIMIT 1',
+    );
+    $statement->execute([
+        'creator_id' => $identifier,
+        'exact_slug' => $identifier,
+        'unprefixed_slug' => $unprefixedSlug,
+        'preferred_id' => $identifier,
+    ]);
     $row = $statement->fetch();
     if (!is_array($row)) throw new ApiException(404, 'NOT_FOUND', 'Creator not found.');
     return api_creator_with_children($pdo, $row, !$publishedOnly);
@@ -137,6 +150,12 @@ function api_creator_child_rows(PDO $pdo, string $table, string $creatorId, stri
 
 function api_creators_create(PDO $pdo, array $input, array $config): array
 {
+    if (!isset($input['slug']) || !is_string($input['slug']) || trim($input['slug']) === '') {
+        $name = is_string($input['display_name'] ?? null)
+            ? $input['display_name']
+            : (is_string($input['name'] ?? null) ? $input['name'] : 'creator');
+        $input['slug'] = api_creator_available_slug($pdo, $name);
+    }
     $payload = api_creator_payload($input, null, true);
     $id = Validation::id($input, 'id', false) ?? raahx_new_id('creator');
     Validation::uniqueSlug($pdo, 'creators', $payload['slug']);
@@ -343,7 +362,18 @@ function api_creator_boolean(array $data, string $key, bool $default): bool
 function api_creator_slug_seed(string $value): string
 {
     $slug = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', $value), '-'));
+    // Leave room for a collision suffix and the public creator- URL prefix.
+    $slug = rtrim(substr($slug, 0, 180), '-');
     return $slug !== '' ? $slug : 'creator';
+}
+
+function api_creator_public_identifier(mixed $value): string
+{
+    $identifier = Validation::string(['identifier' => $value], 'identifier', true, 255) ?? '';
+    if (!preg_match('/^[A-Za-z0-9._-]+$/', $identifier)) {
+        throw new ApiException(400, 'VALIDATION_ERROR', 'Creator identifier is invalid.');
+    }
+    return $identifier;
 }
 
 function api_creator_available_slug(PDO $pdo, string $seed): string

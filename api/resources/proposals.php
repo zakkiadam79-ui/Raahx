@@ -95,11 +95,37 @@ function api_proposal_payload(array $input): array
         'phone' => Validation::string($input, 'phone', true, 100),
         'website' => Validation::nullableString($input, 'website', 2048),
         'industry' => Validation::string($input, 'industry', true, 255),
-        'services' => Validation::string($input, 'services', true, 255),
+        'services' => api_proposal_services($input['services'] ?? null),
         'budget' => Validation::string($input, 'budget', true, 255),
         'timeline' => Validation::string($input, 'timeline', true, 255),
         'project_details' => Validation::string($input, 'project_details', true, 100000),
     ];
+}
+
+function api_proposal_services(mixed $value): string
+{
+    // Keep backward compatibility with existing single-service clients.
+    if (is_string($value)) {
+        return Validation::string(['services' => $value], 'services', true, 255) ?? '';
+    }
+    if (!is_array($value) || $value === [] || count($value) > 50) {
+        throw new ApiException(400, 'VALIDATION_ERROR', 'Select at least one valid service.');
+    }
+
+    $services = [];
+    $seen = [];
+    foreach ($value as $index => $service) {
+        $name = Validation::string(['service' => $service], 'service', true, 255) ?? '';
+        $key = mb_strtolower($name);
+        if (isset($seen[$key])) continue;
+        $seen[$key] = true;
+        $services[] = $name;
+    }
+    $joined = implode(', ', $services);
+    if ($joined === '' || mb_strlen($joined) > 255) {
+        throw new ApiException(400, 'VALIDATION_ERROR', 'The selected service names are too long to submit together.');
+    }
+    return $joined;
 }
 
 function api_proposal_html(string $value): string
