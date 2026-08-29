@@ -15,7 +15,11 @@ return [
     'allowed_origins' => [
         'https://replace-with-raahx-domain.example',
     ],
+    // Preferred: name of the server-only environment variable containing the Admin secret.
     'admin_secret_env' => 'ADMIN_SECRET',
+    // Hostinger/shared-hosting fallback. Set the real value only in the ignored
+    // config.php file; an available environment variable always takes priority.
+    'admin_secret' => null,
     // Preferred: name of the server-only environment variable containing the CNIC encryption key.
     'creator_pii_key_env' => 'CREATOR_PII_KEY',
     // Hostinger/shared-hosting fallback: put the same minimum-32-character secret

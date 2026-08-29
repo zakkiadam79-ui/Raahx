@@ -66,6 +66,8 @@ function raahx_config(): array
             )),
         ), static fn (string $origin): bool => $origin !== '')),
         'admin_secret_env' => raahx_env('RAAHX_ADMIN_SECRET_ENV', 'ADMIN_SECRET'),
+        // Shared hosts may provide this through the ignored config/config.php file.
+        'admin_secret' => null,
         'creator_pii_key_env' => raahx_env('RAAHX_CREATOR_PII_KEY_ENV', 'CREATOR_PII_KEY'),
         // Shared hosts may provide this through the ignored config/config.php file.
         'creator_pii_key' => null,

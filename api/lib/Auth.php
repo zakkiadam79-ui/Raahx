@@ -8,8 +8,12 @@ final class Auth
     public static function login(PDO $pdo, array $config, string $providedSecret): void
     {
         $secretEnvName = (string) ($config['admin_secret_env'] ?? 'ADMIN_SECRET');
-        $configuredSecret = getenv($secretEnvName);
-        if ($configuredSecret === false || $configuredSecret === '') {
+        $environmentSecret = getenv($secretEnvName);
+        $configSecret = $config['admin_secret'] ?? null;
+        $configuredSecret = $environmentSecret !== false && $environmentSecret !== ''
+            ? $environmentSecret
+            : $configSecret;
+        if (!is_string($configuredSecret) || $configuredSecret === '') {
             throw new ApiException(503, 'AUTH_NOT_CONFIGURED', 'Authentication is not configured.');
         }
 
