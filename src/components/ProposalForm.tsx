@@ -26,15 +26,15 @@ type FormData = z.infer<typeof formSchema>;
 const processSteps = [
   {
     title: "We Learn Your Business Inside Out",
-    description: "A dedicated strategist studies your brand, your competitors, and your market — so every recommendation is built on real insight, not guesswork.",
+    description: "We review your business, website, market, competitors, audience, current marketing efforts, and growth objectives to understand where the biggest opportunities are.",
   },
   {
     title: "We Design Your Growth Roadmap",
-    description: "Using AI-driven data and proven frameworks, we craft a strategy engineered specifically around your goals, audience, and budget.",
+    description: "We turn our research into a practical strategy covering the right channels, priorities, opportunities, timelines, and recommended actions for your business.",
   },
   {
     title: "You Receive a Clear, Actionable Plan",
-    description: "A complete proposal with transparent pricing, timelines, and next steps — ready for you to move forward with total confidence.",
+    description: "You'll receive a straightforward proposal outlining recommended services, deliverables, timelines, investment, and next steps—without unnecessary complexity or generic packages.",
   },
 ];
 
@@ -118,11 +118,12 @@ export default function ProposalForm({ sectionId = "proposal" }: { sectionId?: s
 
         {/* Headline */}
         <div className="text-center max-w-2xl mx-auto mb-16">
+          <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-secondary">Let's Build Your Growth Strategy</p>
           <h2 className="text-3xl md:text-5xl font-heading font-bold text-white mb-6 leading-tight">
-            Let's Turn Your Vision Into <span className="text-secondary">Measurable Growth.</span>
+            Turn Your Vision Into <span className="text-secondary">Measurable Growth</span>
           </h2>
           <p className="text-white text-lg font-medium leading-relaxed">
-            Tell us about your business and get a custom, AI-powered growth strategy from RaahX — built around your goals, not a template.
+            Tell us about your business, goals, and challenges. Our team will review your requirements and create a customized digital growth strategy based on your market, audience, budget, and objectives.
           </p>
         </div>
 
@@ -132,7 +133,7 @@ export default function ProposalForm({ sectionId = "proposal" }: { sectionId?: s
           <div>
             <div className="w-full bg-white rounded-3xl p-8 md:p-10 shadow-2xl">
               <h3 className="text-2xl font-heading font-bold text-secondary text-center mb-6">
-                Request a FREE Proposal Now!
+                Request a Free Proposal
               </h3>
 
               {isSuccess ? (
@@ -342,8 +343,9 @@ export default function ProposalForm({ sectionId = "proposal" }: { sectionId?: s
           {/* Right: What Happens Next + Testimonial */}
           <div className="pt-4 lg:pt-24 space-y-10">
             <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-secondary">What Happens Next</p>
               <h3 className="text-2xl font-heading font-bold text-white mb-8">
-                Here's What Happens Next
+                From Your First Message to Your Growth Roadmap
               </h3>
               <div className="space-y-7">
                 {processSteps.map((step, i) => (
@@ -362,7 +364,7 @@ export default function ProposalForm({ sectionId = "proposal" }: { sectionId?: s
 
             <div className="bg-white/15 border border-white/25 rounded-2xl p-6 backdrop-blur-sm">
               <p className="text-white text-[15px] leading-relaxed italic mb-4">
-                "RaahX doesn't just design visuals—they build memorable brands. Every project is driven by creativity, strategy, and AI-powered innovation to help businesses grow with confidence."
+                “RAAHX combines creativity, strategy, and technology in a way that feels completely different from a traditional agency. They don't just deliver marketing work—they understand the business goals behind it and build everything around measurable growth.”
               </p>
               <p className="text-secondary text-sm font-bold tracking-wide">— HAPPY CLIENT</p>
             </div>

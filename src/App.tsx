@@ -12,6 +12,9 @@ import WhyChooseUs from "./components/WhyChooseUs";
 import CaseStudies from "./components/CaseStudies";
 import Process from "./components/Process";
 import Team from "./components/Team";
+import WhoWeHelp from "./components/WhoWeHelp";
+import FAQ from "./components/FAQ";
+import HomepageFinalCta from "./components/HomepageFinalCta";
 import Footer from "./components/Footer";
 import FloatingWhatsApp from "./components/FloatingWhatsApp";
 
@@ -133,9 +136,12 @@ function Home() {
       <Services />
       <Process />
       <WhyChooseUs />
+      <WhoWeHelp />
       <CaseStudies />
       <Team />
       <DeferredProposalForm />
+      <FAQ homepage />
+      <HomepageFinalCta />
     </main>
   );
 }

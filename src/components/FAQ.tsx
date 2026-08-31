@@ -2,6 +2,16 @@ import { useState } from "react";
 import { ChevronDown, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 
+const homepageFaqItems = [
+  { question: "What does a digital marketing agency do?", answer: "A digital marketing agency helps businesses attract, engage, and convert customers through online channels such as SEO, paid advertising, social media, content marketing, websites, and other digital strategies." },
+  { question: "What digital marketing services does RAAHX provide?", answer: "RAAHX provides digital marketing services including SEO, social media marketing, paid advertising, website development, branding, content-focused strategies, AI automation, graphic design, business growth consulting, and app development." },
+  { question: "How can digital marketing help my business grow?", answer: "A strategic digital marketing program can improve your online visibility, attract qualified traffic, generate leads, increase conversions, acquire customers, and create new opportunities for revenue growth." },
+  { question: "Do you work with small businesses?", answer: "Yes. RAAHX develops scalable digital marketing strategies for small businesses based on their goals, market, competition, and available budget." },
+  { question: "Do you provide B2B digital marketing?", answer: "Yes. Our B2B digital marketing strategies can include SEO, content, lead generation, paid advertising, LinkedIn campaigns, conversion optimization, and website strategy." },
+  { question: "Do you work with eCommerce businesses?", answer: "Yes. We help eCommerce brands improve organic visibility, paid acquisition, conversion rates, customer acquisition, and online revenue through integrated digital marketing strategies." },
+  { question: "How much do digital marketing services cost?", answer: "Digital marketing costs depend on the business goals, industry, competition, target audience, required services, and campaign scope. We provide customized proposals rather than forcing every business into the same package." },
+];
+
 const faqItems = [
   {
     question: "What services does RaahX provide?",
@@ -56,26 +66,25 @@ const faqItems = [
   },
 ];
 
-export default function FAQ() {
+export default function FAQ({ homepage = false }: { homepage?: boolean }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const items = homepage ? homepageFaqItems : faqItems;
 
   return (
     <section id="faq" className="bg-surface py-24">
       <div className="mx-auto max-w-4xl px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-2xl text-center">
           <span className="mb-3 inline-block text-sm font-semibold uppercase tracking-wide text-primary">
-            FAQ
+            {homepage ? "Frequently Asked Questions" : "FAQ"}
           </span>
           <h2 className="mb-4 text-3xl font-heading font-bold text-secondary md:text-4xl">
-            Questions, answered clearly.
+            {homepage ? "Digital Marketing Questions, Answered" : "Questions, answered clearly."}
           </h2>
-          <p className="text-body">
-            A straightforward look at how RaahX approaches digital growth and how to get started.
-          </p>
+          {!homepage && <p className="text-body">A straightforward look at how RaahX approaches digital growth and how to get started.</p>}
         </div>
 
         <div className="space-y-3">
-          {faqItems.map((item, index) => {
+          {items.map((item, index) => {
             const isOpen = openIndex === index;
             const answerId = `faq-answer-${index}`;
 

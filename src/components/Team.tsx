@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import {
   fetchTeamFromApi,
-  getStoredTeamMembers,
   isTeamApiConfigured,
   type TeamRecord,
 } from "../services/teamStore";
-import type { TeamMember } from "../data/teamData";
+import { defaultTeamMembers, type TeamMember } from "../data/teamData";
 
 function TeamMemberImage({ member }: { member: TeamMember }) {
   const [imageFailed, setImageFailed] = useState(false);
@@ -41,12 +40,10 @@ function TeamMemberImage({ member }: { member: TeamMember }) {
 }
 
 export default function Team() {
-  const [teamMembers, setTeamMembers] = useState<TeamRecord[]>(() => getStoredTeamMembers());
+  const [teamMembers, setTeamMembers] = useState<TeamRecord[]>(defaultTeamMembers);
 
   useEffect(() => {
     let isMounted = true;
-    const fallbackMembers = getStoredTeamMembers();
-    setTeamMembers(fallbackMembers);
 
     if (!isTeamApiConfigured()) {
       return () => {
@@ -56,10 +53,15 @@ export default function Team() {
 
     fetchTeamFromApi()
       .then((remoteMembers) => {
-        // Keep the current data visible until the first successful migration
-        // has populated the API, rather than flashing an empty Team section.
-        if (isMounted && (remoteMembers.length > 0 || fallbackMembers.length === 0)) {
-          setTeamMembers(remoteMembers);
+        // Keep the document-approved homepage names/order while preserving
+        // current API-managed images, links, and any additional team records.
+        if (isMounted && remoteMembers.length > 0) {
+          const documented = defaultTeamMembers.map((fallback) => {
+            const remote = remoteMembers.find((member) => member.id === fallback.id);
+            return remote ? { ...remote, name: fallback.name, role: fallback.role } : fallback;
+          });
+          const documentedIds = new Set(documented.map((member) => member.id));
+          setTeamMembers([...documented, ...remoteMembers.filter((member) => !documentedIds.has(member.id))]);
         }
       })
       .catch((error) => {
@@ -76,10 +78,10 @@ export default function Team() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <h2 className="text-3xl md:text-4xl font-heading font-bold text-secondary mb-4">
-            Meet the Team
+            Meet the Team Behind RAAHX
           </h2>
           <p className="text-gray-600">
-            The creative minds and technical experts driving your brand forward.
+            Our multidisciplinary team brings together digital marketing, SEO, development, strategy, design, and technology expertise to help businesses build and scale their digital presence.
           </p>
         </div>
 

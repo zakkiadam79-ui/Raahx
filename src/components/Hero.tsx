@@ -53,16 +53,17 @@ export default function Hero() {
             </span>
           </h1>
           
-          <p className="text-sm sm:text-base text-gray-500 mb-8 max-w-lg mx-auto xl:mx-0 leading-relaxed font-medium">
-            RaahX helps businesses build powerful brands, develop high-performance websites, and accelerate growth through modern technology and data-driven digital strategies.
-          </p>
+          <div className="mx-auto mb-8 max-w-xl space-y-4 text-sm font-medium leading-relaxed text-gray-500 sm:text-base xl:mx-0">
+            <p>RAAHX is a results-driven digital marketing agency helping businesses build stronger brands, reach the right audience, generate qualified leads, and drive sustainable growth through data, technology, creativity, and AI-powered strategies.</p>
+            <p>From SEO and paid advertising to social media marketing, web development, branding, and automation, we create digital strategies built around your business goals—not generic marketing packages.</p>
+          </div>
           
           <div className="flex flex-col sm:flex-row items-center justify-center xl:justify-start gap-4">
             <a href="#proposal" className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 text-sm sm:text-base font-semibold text-white bg-teal-600 rounded-full hover:bg-teal-700 transition-all duration-300 shadow-[0_10px_25px_-8px_rgba(15,118,110,0.5)] hover:-translate-y-0.5">
               Get Free Proposal <ArrowRight className="ml-2 h-4 w-4" />
             </a>
             <a href="#services" className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 text-sm sm:text-base font-semibold text-gray-700 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-all duration-300">
-              View Our Work
+              View Our Services
             </a>
           </div>
         </div>
@@ -156,13 +157,13 @@ export default function Hero() {
                 <LineChart className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               </div>
               <div>
-                <div className="text-[10px] sm:text-base font-extrabold text-gray-900 leading-none mb-0.5 sm:mb-1 tracking-tight whitespace-nowrap">RaahX Matrix</div>
-                <div className="text-[7px] sm:text-[11px] font-bold text-teal-600 whitespace-nowrap">Scale Pipeline Tracker</div>
+                <div className="text-[10px] sm:text-base font-extrabold text-gray-900 leading-none mb-0.5 sm:mb-1 tracking-tight whitespace-nowrap">100+</div>
+                <div className="text-[7px] sm:text-[11px] font-bold text-teal-600 whitespace-nowrap">Businesses Supported</div>
               </div>
             </div>
 
-            <div className="absolute top-[1%] left-[68%] sm:left-[72%] bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/80 shadow-[0_12px_25px_-4px_rgba(20,184,166,0.15)] rounded-full px-2.5 sm:px-5 py-1.5 sm:py-2.5 flex items-center gap-1 sm:gap-2 z-40">
-               <span className="text-teal-800 text-[9px] sm:text-xs font-black tracking-wider whitespace-nowrap">+124% Growth</span>
+            <div className="absolute top-[1%] right-[0%] bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/80 shadow-[0_12px_25px_-4px_rgba(20,184,166,0.15)] rounded-full px-2.5 sm:px-5 py-1.5 sm:py-2.5 flex items-center gap-1 sm:gap-2 z-40">
+               <span className="text-teal-800 text-[9px] sm:text-xs font-black tracking-wider whitespace-nowrap">AI-Powered Growth Strategies</span>
                <ArrowUpRight className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-teal-800 stroke-[3]" />
             </div>
 
@@ -172,9 +173,9 @@ export default function Hero() {
                   <div className="text-teal-700 bg-teal-50 p-1 sm:p-1.5 rounded-md sm:rounded-lg border border-teal-100">
                     <Megaphone className="w-3 h-3 sm:w-4 sm:h-4"/>
                   </div>
-                  <span className="font-extrabold text-gray-900 text-[10px] sm:text-xs">Campaigns</span>
+                  <span className="font-extrabold text-gray-900 text-[10px] sm:text-xs">Data-Driven</span>
                 </div>
-                <span className="bg-emerald-50 text-emerald-600 text-[7px] sm:text-[9px] font-black px-1.5 sm:px-2 py-0.5 sm:py-1 rounded uppercase tracking-wider border border-emerald-100">Active</span>
+                <span className="bg-emerald-50 text-emerald-600 text-[7px] sm:text-[9px] font-black px-1.5 sm:px-2 py-0.5 sm:py-1 rounded uppercase tracking-wider border border-emerald-100">Digital Marketing</span>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-1.5 sm:h-2 overflow-hidden">
                 <div className="bg-gradient-to-r from-teal-400 to-teal-700 h-full rounded-full w-[85%] relative" />

@@ -22,42 +22,42 @@ const reasons = [
   {
     icon: Bot,
     title: "AI-Powered Solutions",
-    description: "We combine creativity with AI to help businesses grow faster.",
+    description: "We integrate practical AI and automation into marketing and business workflows to improve efficiency, insights, and scalability.",
   },
   {
     icon: Target,
     title: "Research-Driven Strategy",
-    description: "Every project starts with research, not assumptions.",
+    description: "Every recommendation starts with understanding your market, competitors, audience, search demand, and business objectives.",
   },
   {
     icon: PenTool,
     title: "Premium Design",
-    description: "Modern, clean, and conversion-focused designs that build trust.",
+    description: "We create modern, user-focused digital experiences that communicate credibility, strengthen your brand, and support conversions.",
   },
   {
     icon: TrendingUp,
     title: "Business Growth Focus",
-    description: "We don't just deliver projects — we help businesses generate results.",
+    description: "We focus on outcomes that matter—visibility, qualified traffic, leads, conversions, customer acquisition, revenue, and ROI.",
   },
   {
     icon: Handshake,
     title: "Complete Digital Partner",
-    description: "Branding, websites, marketing, AI, and automation — all under one roof.",
+    description: "SEO, paid advertising, social media, websites, branding, AI automation, and strategy—managed through one connected digital partner.",
   },
   {
     icon: MessageCircle,
     title: "Transparent Communication",
-    description: "Clear timelines, regular updates, and professional support throughout the project.",
+    description: "Clear strategies, realistic timelines, regular updates, and straightforward communication keep you informed throughout every project.",
   },
   {
     icon: Zap,
-    title: "Fast Delivery",
-    description: "Efficient workflows without compromising quality.",
+    title: "Fast, Efficient Delivery",
+    description: "Our streamlined workflows help us execute efficiently while maintaining quality, strategic thinking, and attention to detail.",
   },
   {
     icon: Headphones,
-    title: "Long-Term Support",
-    description: "We're your growth partner, even after the project is completed.",
+    title: "Long-Term Partnership",
+    description: "We don't disappear after launch. We continue to analyze, optimize, support, and identify new opportunities for sustainable growth.",
   },
 ];
 
@@ -129,13 +129,13 @@ export default function WhyChooseUs() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <span className="inline-block text-sm font-semibold tracking-wide uppercase mb-3" style={{ color: "#2DD4BF" }}>
-            Why Choose RaahX?
+            Why Businesses Choose RaahX
           </span>
           <h2 className="text-3xl md:text-4xl font-heading font-bold text-white mb-4">
-            Why Businesses Choose <span style={{ color: "#2DD4BF" }}>RaahX</span>
+            A Digital Marketing Agency Focused on <span style={{ color: "#2DD4BF" }}>Real Business Growth</span>
           </h2>
           <p className="text-gray-400">
-            We combine creativity, technology, and strategy to help businesses grow faster and smarter.
+            We combine strategy, creativity, technology, data, and AI to help businesses move beyond disconnected marketing activities and build a scalable digital growth system.
           </p>
         </div>
 
@@ -174,15 +174,17 @@ export default function WhyChooseUs() {
               className="inline-block text-xs font-semibold tracking-wide uppercase px-4 py-1.5 rounded-full mb-6"
               style={{ color: "#2DD4BF", backgroundColor: "rgba(45,212,191,0.1)" }}
             >
-              Let's Build Your Success
+              Ready to Grow?
             </span>
             <h3 className="text-2xl md:text-4xl font-heading font-bold text-white mb-4 leading-tight">
-              Ready to Start <br className="hidden md:block" />
-              Your Next <span style={{ color: "#2DD4BF" }}>Project?</span>
+              Turn Your Digital Presence <br className="hidden md:block" />
+              Into a <span style={{ color: "#2DD4BF" }}>Growth Engine.</span>
             </h3>
             <p className="text-gray-400 mb-8 max-w-md">
-              Let's turn your ideas into results. Book a free consultation with our experts today.
+              Whether you need better search visibility, more qualified leads, stronger campaigns, or a complete digital transformation, RAAHX can build a strategy around your goals.
             </p>
+
+            <p className="mb-6 text-sm font-medium text-teal-200">No generic packages. No unnecessary services. Just a strategy built around your business.</p>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <a

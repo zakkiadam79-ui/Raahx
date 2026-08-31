@@ -11,35 +11,35 @@ const steps = [
     icon: Search,
     title: "Discover",
     subtitle: "We Listen First",
-    description: "We understand your business, goals, audience, and challenges before starting any project.",
+    description: "We learn about your business, audience, competitors, challenges, goals, and growth opportunities before recommending a solution.",
   },
   {
     number: "02",
     icon: TrendingUp,
     title: "Research & Strategy",
-    subtitle: "Plan with Purpose",
-    description: "We analyze your market, competitors, and audience to create the right strategy.",
+    subtitle: "Plan With Purpose",
+    description: "We analyze your market, competitors, audience, search opportunities, and business objectives to create a customized digital marketing strategy.",
   },
   {
     number: "03",
     icon: PenSquare,
     title: "Design & Develop",
-    subtitle: "Bring Ideas to Life",
-    description: "Our team creates modern designs, high-performance websites & digital solutions.",
+    subtitle: "Turn Strategy Into Action",
+    description: "Our specialists transform the strategy into high-quality campaigns, content, websites, creative assets, and digital experiences built for performance.",
   },
   {
     number: "04",
     icon: Rocket,
-    title: "Launch & Grow",
+    title: "Launch & Optimize",
     subtitle: "Performance Matters",
-    description: "We launch, monitor, and optimize to ensure continuous growth and better results.",
+    description: "We launch, measure, test, and optimize your campaigns using real performance data to improve visibility, traffic, leads, conversions, and ROI.",
   },
   {
     number: "05",
     icon: BrainCircuit,
-    title: "Scale with AI",
-    subtitle: "Future-Ready Growth",
-    description: "We automate, optimize, and scale your business with the power of AI.",
+    title: "Scale With AI",
+    subtitle: "Build for the Future",
+    description: "We use AI, automation, data, and proven marketing frameworks to improve efficiency and create scalable systems for long-term growth.",
   },
 ];
 
@@ -131,10 +131,10 @@ export default function Process() {
           </span>
           <h2 className="text-4xl md:text-6xl font-heading font-bold text-secondary mb-4 leading-tight">
             Our Proven Process <br className="hidden md:block" />
-            From Idea to <span style={{ color: ACCENT_TEAL }}>Growth</span>
+            From Strategy to <span style={{ color: ACCENT_TEAL }}>Growth</span>
           </h2>
           <p className="text-gray-600">
-            We follow a results-driven process that ensures every project delivers value, quality, and long-term growth.
+            We combine research, strategy, creative execution, technology, and continuous optimization to build digital solutions that deliver measurable business value.
           </p>
         </div>
 

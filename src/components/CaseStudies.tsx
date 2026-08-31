@@ -8,6 +8,19 @@ import {
   type CaseStudyRecord,
 } from "../services/caseStudyStore";
 
+const homepageCaseContent: Record<string, Pick<CaseStudyRecord, "challenge" | "solution" | "metrics">> = {
+  "ecommerce-brand": {
+    challenge: "High customer acquisition costs, inconsistent sales, and low customer retention in a competitive eCommerce market.",
+    solution: "We combined performance marketing, conversion optimization, audience insights, and automated customer journeys to improve acquisition efficiency and increase repeat purchases.",
+    metrics: [{ value: "346%", label: "ROAS" }, { value: "7.5X", label: "Revenue Growth" }, { value: "42%", label: "CPA Reduction" }],
+  },
+  "b2b-saas-platform": {
+    challenge: "The company needed a stronger lead-generation system and greater visibility among enterprise decision-makers.",
+    solution: "We developed a targeted B2B growth strategy combining SEO, LinkedIn campaigns, account-based marketing, and high-value content designed to attract qualified prospects.",
+    metrics: [{ value: "22K", label: "MQLs" }, { value: "139%", label: "Conversion Growth" }, { value: "4.2M", label: "Pipeline Generated" }],
+  },
+};
+
 export default function CaseStudies() {
   const [caseStudies, setCaseStudies] = useState<CaseStudyRecord[]>(() => getStoredCaseStudies());
 
@@ -42,26 +55,27 @@ export default function CaseStudies() {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
           <div className="max-w-2xl">
             <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">
-              Case Studies
+              Real Strategies. Measurable Results.
             </h2>
             <p className="text-gray-400">
-              Real results. Discover how we've helped brands transform their digital presence and achieve unprecedented growth.
+              See how strategic digital marketing, technology, and data-driven campaigns can turn business challenges into measurable growth opportunities.
             </p>
           </div>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          {caseStudies.map((study) => (
-            <div key={study.id} className="bg-white/5 rounded-3xl p-8 border border-white/10 hover:bg-white/10 transition-colors flex flex-col justify-between">
+          {caseStudies.map((record) => {
+            const study = { ...record, ...(homepageCaseContent[record.slug] ?? {}) };
+            return <div key={study.id} className="bg-white/5 rounded-3xl p-8 border border-white/10 hover:bg-white/10 transition-colors flex flex-col justify-between">
               <div>
-                <div className="flex justify-between items-start mb-8">
+                <div className="mb-8 flex flex-col items-start justify-between gap-3 sm:flex-row">
                   <h3 className="text-2xl font-heading font-semibold text-teal-300">{study.client}</h3>
                   <Link
                     to={`/case-studies/${study.slug}`}
-                    className="p-2 bg-white/10 rounded-full hover:bg-primary transition-colors text-white shrink-0"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary"
                     aria-label={`View ${study.client} case study`}
                   >
-                    <ArrowUpRight size={20} />
+                    <span>View Case Study</span><ArrowUpRight size={18} />
                   </Link>
                 </div>
 
@@ -85,8 +99,8 @@ export default function CaseStudies() {
                   </div>
                 ))}
               </div>
-            </div>
-          ))}
+            </div>;
+          })}
         </div>
       </div>
     </section>
