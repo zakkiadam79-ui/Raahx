@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import {
   servicesData as staticServices,
   ServiceData,
@@ -19,16 +20,19 @@ const cardStyles = [
     card: "bg-white border border-gray-100 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5",
     iconWrap: "bg-primary/8 text-primary",
     heading: "text-secondary",
+    body: "text-body",
   },
   {
     card: "bg-primary border border-primary hover:shadow-xl hover:shadow-primary/20",
     iconWrap: "bg-white/15 text-white",
     heading: "text-white",
+    body: "text-white/80",
   },
   {
     card: "bg-secondary border border-secondary hover:shadow-xl hover:shadow-black/10",
     iconWrap: "bg-white/10 text-white",
     heading: "text-white",
+    body: "text-white/75",
   },
 ];
 
@@ -87,14 +91,14 @@ export default function Services() {
   return (
     <section id="services" className="py-24 bg-surface">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">What We Do</p>
           <h2 className="text-3xl md:text-4xl font-heading font-bold text-secondary mb-4">
-            Services
+            Digital Marketing Services Built for Growth
           </h2>
 
-          <p className="text-body">
-            Comprehensive digital solutions tailored to scale your brand and
-            maximize ROI.
+          <p className="text-body leading-relaxed">
+            From strategy and search visibility to paid campaigns, social media, websites, and AI automation, RAAHX provides integrated digital marketing services designed to help businesses attract customers, increase conversions, and scale with confidence.
           </p>
         </div>
 
@@ -120,6 +124,16 @@ export default function Services() {
                 >
                   {service.name}
                 </h3>
+
+                {service.cardDescription && (
+                  <p className={`text-xs leading-5 ${style.body}`}>{service.cardDescription}</p>
+                )}
+
+                {service.cardCtaLabel && (
+                  <span className={`mt-auto inline-flex items-center gap-1 text-xs font-bold ${style.heading}`}>
+                    {service.cardCtaLabel} <ArrowRight size={13} />
+                  </span>
+                )}
               </Link>
             );
           })}

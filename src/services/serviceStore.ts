@@ -216,6 +216,26 @@ function apiServiceToRecord(value: unknown): ServiceRecord | null {
   const testimonial = raw.testimonial && typeof raw.testimonial === "object"
     ? raw.testimonial as Record<string, unknown>
     : {};
+  const contentSections = Array.isArray(raw.content_sections ?? raw.contentSections)
+    ? ((raw.content_sections ?? raw.contentSections) as unknown[]).map((sectionValue) => {
+        const section = sectionValue as Record<string, unknown>;
+        const items = Array.isArray(section.items) ? section.items.map((itemValue) => {
+          const item = itemValue as Record<string, unknown>;
+          return {
+            title: String(item.title ?? ""),
+            description: String(item.description ?? ""),
+            details: item.details == null ? undefined : String(item.details),
+          };
+        }) : [];
+        return {
+          key: String(section.key ?? section.section_key ?? ""),
+          eyebrow: section.eyebrow == null ? undefined : String(section.eyebrow),
+          heading: String(section.heading ?? ""),
+          body: section.body == null ? undefined : String(section.body),
+          items,
+        };
+      })
+    : [];
 
   const rawDisplayOrder = raw.display_order ?? raw.displayOrder;
   const displayOrder = rawDisplayOrder === undefined || rawDisplayOrder === null
@@ -230,11 +250,22 @@ function apiServiceToRecord(value: unknown): ServiceRecord | null {
     icon: raw.icon_identifier ?? raw.icon,
     heroTitle: raw.hero_title ?? raw.heroTitle ?? "",
     heroSubtitle: raw.hero_subtitle ?? raw.heroSubtitle ?? "",
+    cardDescription: raw.card_description ?? raw.cardDescription ?? "",
+    cardCtaLabel: raw.card_cta_label ?? raw.cardCtaLabel ?? "",
+    heroCtaLabel: raw.hero_cta_label ?? raw.heroCtaLabel ?? "",
+    overviewTitle: raw.overview_title ?? raw.overviewTitle ?? "",
     whyChooseTitle: raw.why_choose_title ?? raw.whyChooseTitle ?? "",
     whyChooseText: raw.why_choose_text ?? raw.whyChooseText ?? "",
+    processTitle: raw.process_title ?? raw.processTitle ?? "",
+    benefitsTitle: raw.benefits_title ?? raw.benefitsTitle ?? "",
+    ctaTitle: raw.cta_title ?? raw.ctaTitle ?? "",
+    ctaText: raw.cta_text ?? raw.ctaText ?? "",
+    ctaSupportingText: raw.cta_supporting_text ?? raw.ctaSupportingText ?? "",
+    ctaLabel: raw.cta_label ?? raw.ctaLabel ?? "",
     stats,
     process,
     benefits,
+    contentSections,
     testimonial: {
       quote: testimonial.quote ?? raw.testimonial_quote ?? "",
       author: testimonial.author ?? raw.testimonial_author ?? "",
@@ -251,9 +282,24 @@ function serviceRecordToApiPayload(service: ServiceRecord, displayOrder?: number
     icon_identifier: service.icon,
     hero_title: service.heroTitle,
     hero_subtitle: service.heroSubtitle,
+    card_description: service.cardDescription ?? "",
+    card_cta_label: service.cardCtaLabel ?? "",
+    hero_cta_label: service.heroCtaLabel ?? "",
+    overview_title: service.overviewTitle ?? "",
     overview: service.overview,
     why_choose_title: service.whyChooseTitle,
     why_choose_text: service.whyChooseText,
+    process_title: service.processTitle ?? "",
+    benefits_title: service.benefitsTitle ?? "",
+    cta_title: service.ctaTitle ?? "",
+    cta_text: service.ctaText ?? "",
+    cta_supporting_text: service.ctaSupportingText ?? "",
+    cta_label: service.ctaLabel ?? "",
+    content_sections: (service.contentSections ?? []).map((section, sectionIndex) => ({
+      ...section,
+      display_order: sectionIndex,
+      items: section.items.map((item, itemIndex) => ({ ...item, display_order: itemIndex })),
+    })),
     stats: service.stats.map((stat, index) => ({ ...stat, display_order: index })),
     process: service.process.map((step, index) => ({ ...step, display_order: index })),
     benefits: service.benefits.map((benefit, index) => ({ ...benefit, display_order: index })),

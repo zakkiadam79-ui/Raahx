@@ -121,9 +121,15 @@ export default function ServiceDetail() {
           )}
 
           {service.heroSubtitle && (
-            <p className="font-body text-base md:text-lg text-body/90 max-w-2xl mx-auto leading-relaxed font-normal">
+            <p className="whitespace-pre-line font-body text-base md:text-lg text-body/90 max-w-2xl mx-auto leading-relaxed font-normal">
               {service.heroSubtitle}
             </p>
+          )}
+
+          {service.heroCtaLabel && (
+            <Link to="/proposal" className="mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-heading font-semibold text-white shadow-lg transition hover:bg-primary-dark">
+              {service.heroCtaLabel} <ArrowRight size={18} />
+            </Link>
           )}
         </div>
       </section>
@@ -151,7 +157,8 @@ export default function ServiceDetail() {
       {service.overview && (
         <section className="py-20">
           <div className="max-w-3xl mx-auto px-6 lg:px-8">
-            <p className="font-body text-lg text-body leading-relaxed">
+            {service.overviewTitle && <h2 className="mb-6 font-heading text-3xl font-bold text-secondary md:text-[42px]">{service.overviewTitle}</h2>}
+            <p className="whitespace-pre-line font-body text-lg text-body leading-relaxed">
               {service.overview}
             </p>
           </div>
@@ -169,7 +176,7 @@ export default function ServiceDetail() {
             )}
 
             {service.whyChooseText && (
-              <p className="font-body text-lg text-body leading-relaxed text-left">
+              <p className="whitespace-pre-line font-body text-lg text-body leading-relaxed text-left">
                 {service.whyChooseText}
               </p>
             )}
@@ -182,7 +189,7 @@ export default function ServiceDetail() {
         <section className="py-20">
           <div className="max-w-5xl mx-auto px-6 lg:px-8">
             <h2 className="font-heading font-bold text-secondary text-3xl md:text-[42px] mb-12 text-center">
-              How We Make It Happen
+              {service.processTitle || "How We Make It Happen"}
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -216,7 +223,7 @@ export default function ServiceDetail() {
         <section className="py-20 bg-surface">
           <div className="max-w-5xl mx-auto px-6 lg:px-8">
             <h2 className="font-heading font-bold text-secondary text-3xl md:text-[42px] mb-12 text-center">
-              Your Unfair Advantage
+              {service.benefitsTitle || "Your Unfair Advantage"}
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -241,6 +248,28 @@ export default function ServiceDetail() {
         </section>
       )}
 
+      {/* Additional document-defined sections */}
+      {service.contentSections?.map((section, sectionIndex) => (
+        <section key={section.key} className={`py-20 ${sectionIndex % 2 ? "bg-surface" : "bg-white"}`}>
+          <div className="mx-auto max-w-5xl px-6 lg:px-8">
+            {section.eyebrow && <p className="mb-3 text-center text-xs font-bold uppercase tracking-[0.18em] text-primary">{section.eyebrow}</p>}
+            <h2 className="text-center font-heading text-3xl font-bold text-secondary md:text-[42px]">{section.heading}</h2>
+            {section.body && <p className="mx-auto mt-6 max-w-3xl whitespace-pre-line text-base leading-7 text-body">{section.body}</p>}
+            {section.items.length > 0 && (
+              <div className={`mt-10 grid gap-5 ${section.key === "faqs" ? "md:grid-cols-1" : "md:grid-cols-2"}`}>
+                {section.items.map((item) => (
+                  <article key={item.title} className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+                    <h3 className="font-heading text-xl font-semibold text-secondary">{item.title}</h3>
+                    {item.description && <p className="mt-3 whitespace-pre-line text-sm leading-6 text-body">{item.description}</p>}
+                    {item.details && <p className="mt-4 whitespace-pre-line border-l-2 border-primary pl-4 text-sm leading-6 text-body">{item.details}</p>}
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      ))}
+
       {/* Testimonial Section */}
       {service.testimonial?.quote && (
         <section className="py-20 bg-secondary text-white">
@@ -262,20 +291,21 @@ export default function ServiceDetail() {
       <section className="py-20 bg-gradient-to-br from-secondary via-[#081B17] to-secondary text-white border-t border-white/10">
         <div className="max-w-4xl mx-auto px-6 text-center space-y-6">
           <h2 className="font-heading font-extrabold text-3xl md:text-5xl tracking-tight text-white">
-            Ready to Scale Your Brand with {service.name}?
+            {service.ctaTitle || `Ready to Scale Your Brand with ${service.name}?`}
           </h2>
 
           <p className="font-body text-gray-300 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-            Get a customized, data-driven roadmap tailored specifically to your
-            business goals. No commitments, completely free.
+            {service.ctaText || "Get a customized, data-driven roadmap tailored specifically to your business goals. No commitments, completely free."}
           </p>
+
+          {service.ctaSupportingText && <p className="text-sm font-medium text-teal-100">{service.ctaSupportingText}</p>}
 
           <div className="pt-4">
             <Link
               to="/proposal"
               className="inline-flex items-center gap-3 bg-[#14B8A6] hover:bg-[#0d9488] text-white font-heading font-semibold text-lg px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group"
             >
-              Get Your Free Proposal
+              {service.ctaLabel || "Get Your Free Proposal"}
 
               <ArrowRight
                 size={20}

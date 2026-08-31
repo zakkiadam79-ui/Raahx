@@ -6,16 +6,33 @@ export interface ServiceData {
   icon: ServiceIconName;
   heroTitle: string;
   heroSubtitle: string;
+  cardDescription?: string;
+  cardCtaLabel?: string;
+  heroCtaLabel?: string;
+  overviewTitle?: string;
   overview: string;
   whyChooseTitle: string;
   whyChooseText: string;
+  processTitle?: string;
   process: { title: string; description: string }[];
+  benefitsTitle?: string;
   benefits: { title: string; description: string }[];
   stats: { label: string; value: string }[];
   testimonial: { quote: string; author: string };
+  contentSections?: {
+    key: string;
+    eyebrow?: string;
+    heading: string;
+    body?: string;
+    items: { title: string; description: string; details?: string }[];
+  }[];
+  ctaTitle?: string;
+  ctaText?: string;
+  ctaSupportingText?: string;
+  ctaLabel?: string;
 }
 
-export const servicesData: ServiceData[] = [
+const baseServicesData: ServiceData[] = [
   {
     slug: "digital-marketing",
     name: "Digital Marketing Services",
@@ -287,3 +304,216 @@ export const servicesData: ServiceData[] = [
     testimonial: { quote: "RaahX built our app exactly the way we envisioned it—fast, stable, and easy for our customers to use from day one.", author: "Happy Client" },
   },
 ];
+
+const documentedServiceContent: Record<string, Partial<ServiceData>> = {
+  "digital-marketing": {
+    cardDescription: "Build a complete digital growth strategy that connects your marketing channels, audience, technology, and business goals.",
+    cardCtaLabel: "Explore Digital Marketing",
+    heroTitle: "Digital Marketing Services That Actually Move the Needle",
+    heroSubtitle: "Turn your online presence into something that consistently brings in leads, customers, and revenue — not just traffic and vanity metrics.\n\nAt RaahX, we combine SEO, paid advertising, social media, content, and AI-driven insights into one connected strategy, so your business reaches the right people and converts more of them into paying customers.",
+    heroCtaLabel: "Get Your Free Digital Marketing Proposal",
+    overviewTitle: "Turn Online Searches Into Real Business",
+    overview: "Somewhere right now, someone is searching for exactly what you sell. The question is whether they find your business first or a competitor's.\n\nThat's the gap the right digital marketing strategy closes.\n\nMost agencies treat SEO, Google Ads, social media, and content as separate line items. We don't. At RaahX, we connect them around one outcome: getting your business in front of the right audience and turning that attention into action.\n\nWe start by looking honestly at where you stand today — your website, your competitors, your market — and use that to figure out where the real opportunities are. From there, we build a strategy shaped by your budget, your audience, and what you're actually trying to achieve.",
+    whyChooseTitle: "Why Businesses Choose RaahX",
+    whyChooseText: "Marketing Built Around Your Business, Not a Package\n\nPlenty of agencies will promise you more traffic, more followers, more rankings. None of that means much if it's not translating into revenue.\n\nSo before we pitch a channel or launch a single campaign, we take the time to actually understand your business, your customers, and your goals. The channels come after — not before.\n\nA strategy shaped by your business\nNo template marketing plans copy-pasted between clients. Your industry, your competitors, your audience, and your sales process all shape what we recommend.\n\nReporting that actually makes sense\nYou shouldn't need a marketing degree to read your own results. We report on what matters — leads, conversions, cost per acquisition, return on ad spend — not just clicks and impressions.\n\nAI as a tool, not a replacement\nWe use AI to speed up research, spot opportunities, and make sense of campaign data faster. The strategic thinking behind your campaigns still comes from our team.\n\nChannels that talk to each other\nYour Google Ads data can point to search trends worth chasing in SEO. Your SEO performance can surface content ideas. Your social audience can sharpen your paid targeting. We use what one channel tells us to improve the others.\n\nOngoing improvement, not a set-and-forget campaign\nWe keep watching performance, testing what could work better, and adjusting when the numbers point somewhere new.",
+    processTitle: "How We Make It Happen",
+    process: [
+      { title: "Discovery & Marketing Audit", description: "We start by getting to know your business — your website, current marketing, competitors, audience, and results. Includes: business research, audience research, competitor analysis, website review, channel audit, conversion review, and growth opportunities." },
+      { title: "Digital Marketing Strategy", description: "We choose channels and priorities based on your goals, budget, audience, and sales cycle. Includes: marketing strategy, channel planning, audience targeting, customer journey, campaign planning, budget planning, and KPI setting." },
+      { title: "Integrated Campaign Execution", description: "We manage the channels your business needs under one connected strategy. Includes: SEO, PPC and Google Ads, social media, content marketing, paid social, landing-page optimization, and performance marketing." },
+      { title: "Data-Driven Optimization", description: "We review what drives results and adjust what does not. Includes: performance tracking, conversion analysis, A/B testing, audience refinement, ad optimization, budget adjustments, and ROI analysis." },
+    ],
+    benefitsTitle: "What You Actually Get With RaahX",
+    benefits: [
+      { title: "More Qualified Traffic", description: "We focus on reaching people who actually want what you offer, not chasing numbers for their own sake." },
+      { title: "More Opportunities to Convert", description: "We improve the path from the first click to the enquiry, booking, or purchase." },
+      { title: "Better Decisions, Backed by Data", description: "Real campaign data and customer behaviour guide our recommendations, not guesswork." },
+      { title: "A Stronger, More Consistent Presence", description: "We keep your brand visible and recognizable whether customers find you on Google or social media." },
+      { title: "Growth That Compounds", description: "The goal is not one good campaign. It is finding what works and building on it as your business grows." },
+    ],
+    stats: [
+      { label: "Projects Delivered", value: "150+" },
+      { label: "Client Rating", value: "4.9★" },
+      { label: "Average ROI Increase", value: "3x" },
+    ],
+    contentSections: [
+      { key: "full-process", heading: "Our Process, Step by Step", items: [
+        { title: "Discover", description: "We learn your business, your customers, your competitors, and your goals." },
+        { title: "Audit", description: "We review your website, SEO, ads, content, social, and conversion performance to find the gaps." },
+        { title: "Strategize", description: "We turn what we find into a clear roadmap with real priorities and measurable goals." },
+        { title: "Execute", description: "We launch and manage the right campaigns, keeping every channel connected." },
+        { title: "Optimize", description: "We monitor results, test new approaches, and refine based on the data." },
+        { title: "Scale", description: "When something works, we expand it through more budget, audiences, and channels." },
+      ] },
+      { key: "service-types", heading: "Our Digital Marketing Services", items: [
+        { title: "SEO Services", description: "Get found when people are actively searching through technical SEO, keyword research, content optimization, internal linking, and authority building." },
+        { title: "PPC Services", description: "Reach people ready to act through Google Ads and paid search, with continual keyword, copy, targeting, and budget refinement." },
+        { title: "Social Media Marketing", description: "Stay relevant through content and engagement strategies built around awareness and bringing people back to your business." },
+        { title: "Content Marketing", description: "Articles, landing pages, and content that answer customer questions, support SEO, and move people closer to a decision." },
+        { title: "Performance Marketing", description: "Measure every dollar against real outcomes and continually refine what is not generating returns." },
+      ] },
+      { key: "business-growth", heading: "Will Digital Marketing Actually Grow My Business?", body: "Honestly — that's the right question to ask. Better rankings, traffic, and followers are useful only when they lead to enquiries, customers, or revenue. At RaahX, traffic, rankings, and engagement are steps toward something bigger: more of the right people finding you, more of them taking action, and more of them choosing your business over the competition.", items: [] },
+      { key: "faqs", eyebrow: "Frequently Asked Questions", heading: "Digital Marketing Questions, Answered", items: [
+        { title: "How is RaahX different from other digital marketing companies in Pakistan?", description: "We identify which channels are worth investing in based on your audience, competitors, goals, and budget, then run them together instead of as disconnected campaigns." },
+        { title: "How soon can I expect results?", description: "It depends on the channel. Paid advertising can produce data and leads quickly, while SEO and content marketing take longer because organic visibility and authority build over time." },
+        { title: "Do you work with businesses outside Pakistan?", description: "Yes. We work locally across Pakistan and in international markets. The strategy depends on where your customers are and how they buy." },
+        { title: "What does AI-powered digital marketing actually mean here?", description: "We use AI for audience research, data analysis, content research, and spotting opportunities faster, while strategic decisions remain with our team." },
+        { title: "Can you manage all our digital marketing channels?", description: "Yes. SEO, PPC, social, content, and performance campaigns can run under one strategy, or we can focus on only the channels you need." },
+      ] },
+    ],
+    ctaTitle: "Ready to Build Smarter and Grow Faster?",
+    ctaText: "Partner with a digital marketing agency that combines strategy, creativity, technology, data, and AI to turn your online presence into a scalable growth engine.",
+    ctaSupportingText: "Tell us where your business is today, where you want to go, and we'll help map the path forward.",
+    ctaLabel: "Get Your Free Digital Marketing Proposal",
+  },
+  "social-media-marketing": {
+    cardDescription: "Build an active social presence with strategic content, audience engagement, paid campaigns, and performance-focused social media marketing.",
+    cardCtaLabel: "Explore Social Media",
+    heroTitle: "Build a Stronger Brand Through Strategic Social Media",
+    heroSubtitle: "Turn scrolling audiences into loyal customers with social media marketing built to increase visibility, engagement, and qualified leads — not just likes.",
+    overviewTitle: "Social Media That Does More Than Fill Your Feed",
+    overview: "Turn Attention Into Meaningful Action\n\nYour customers are already spending hours a day on social media. The hard part isn't finding them — it's earning their attention and giving them a reason to engage with your brand.\n\nRaahX brings together social strategy, creative content, audience engagement, paid campaigns, and performance analytics to help businesses build real online communities and turn those interactions into business opportunities.\n\nPosting consistently isn't the goal on its own. We build data-driven social strategies that connect your brand with potential customers, build credibility, spark engagement, and support your broader marketing goals.",
+    whyChooseTitle: "What Our Social Media Marketing Can Do for Your Brand",
+    whyChooseText: "A Strategy Built Around Your Business\n\nEvery campaign has a clear job to do — whether that is raising awareness or generating qualified leads. Strategy comes before content, creative works alongside data, engagement builds relationships, and clear analytics show what is working.",
+    processTitle: "Our Social Media Marketing Process",
+    process: [
+      { title: "Understand Your Audience", description: "We identify who you want to reach, including their interests, behaviors, needs, and preferred platforms." },
+      { title: "Build Your Strategy", description: "We shape a strategy around your business goals, customer journey, brand positioning, and growth opportunities." },
+      { title: "Create Content That Connects", description: "We develop content that reflects your brand and gives your audience real reasons to engage." },
+      { title: "Launch & Manage Campaigns", description: "We publish, monitor, and manage campaigns while engaging your audience and maintaining consistent communication." },
+      { title: "Measure What Matters", description: "We track engagement, reach, audience growth, traffic, leads, and overall campaign performance." },
+      { title: "Optimize for Better Results", description: "We use performance data to fix what is underperforming and build on what works." },
+    ],
+    benefitsTitle: "More Than Followers. More Meaningful Growth.",
+    benefits: [
+      { title: "Stronger Brand Loyalty", description: "Consistent communication and useful content build lasting audience relationships." },
+      { title: "More Engagement", description: "Give people something worth responding to, sharing, saving, or discussing." },
+      { title: "Better Quality Leads", description: "Turn social attention into opportunities through strategic content, clear calls to action, and targeted campaigns." },
+      { title: "A Stronger Online Presence", description: "Stay visible and recognizable throughout the customer journey, not just in a single post." },
+    ],
+    stats: [
+      { label: "Campaigns Managed", value: "200+" },
+      { label: "Average Engagement Lift", value: "45%" },
+      { label: "Client Rating", value: "4.8★" },
+    ],
+    contentSections: [
+      { key: "capabilities", heading: "Content and Campaigns Built to Perform", items: [
+        { title: "Content Worth Stopping For", description: "We combine strong copy, branded visuals, educational posts, promotions, short-form video, and storytelling.", details: "Build brand awareness\nEducate potential customers\nShowcase products or services\nSpark genuine engagement\nBuild trust and credibility\nDrive website traffic\nGenerate leads" },
+        { title: "Campaigns Managed From Idea to Result", description: "We plan, execute, and continually adjust campaigns while monitoring targeting, creative performance, engagement, traffic, and conversions." },
+        { title: "Paid Social to Reach the Right People, Faster", description: "We run paid campaigns for awareness, traffic, lead generation, promotion, acquisition, retargeting, sales, and conversions." },
+      ] },
+      { key: "growth-stages", heading: "Social Media Marketing for Every Stage of Growth", items: [
+        { title: "For Businesses", description: "Align social activity with broader goals, from awareness to qualified leads." },
+        { title: "For Small Businesses", description: "Build credibility, reach local audiences, and compete effectively with a focused strategy and budget." },
+        { title: "For Startups", description: "Introduce your brand, communicate what makes it different, and build a community from day one." },
+        { title: "For Established Brands", description: "Strengthen recognition through consistent messaging, storytelling, and a presence that reflects the brand." },
+        { title: "For eCommerce", description: "Showcase products, engage buyers, drive targeted traffic, and support organic and paid sales." },
+      ] },
+      { key: "social-difference", heading: "Why Businesses Choose RaahX for Social Media", items: [
+        { title: "Strategy Comes Before Content", description: "Every campaign starts with your audience, objective, and desired outcome." },
+        { title: "Creative Meets Data", description: "Engaging content paired with performance insight allows the strategy to evolve." },
+        { title: "Engagement That Builds Relationships", description: "We focus on interactions that build trust and keep people coming back." },
+        { title: "Results You Can Actually Measure", description: "Clear analytics show what works and how your investment contributes to growth." },
+      ] },
+      { key: "social-goals", heading: "Your Social Media, Working Toward Real Business Goals", body: "Social media should do more than collect likes and followers. When strategy, content, community management, paid social, and analytics work together, social channels become a genuine part of customer acquisition and growth.", items: [] },
+      { key: "faqs", eyebrow: "Frequently Asked Questions", heading: "Social Media Marketing Questions, Answered", items: [
+        { title: "Which social media platforms should my business actually be on?", description: "It depends on where your customers spend time, not which platform is trending. A B2B company may gain more from LinkedIn while an eCommerce brand may gain more from Instagram." },
+        { title: "How long does it take to see results from social media marketing?", description: "Paid social can generate traffic and leads within days. Organic growth, engagement, and community trust usually build over several months." },
+        { title: "Do you handle both organic content and paid advertising?", description: "Yes. We manage organic content, community engagement, and paid campaigns together under the same strategy." },
+        { title: "Will I have input on the content before it goes live?", description: "Yes. We share content calendars and creative for review so you can provide input on tone, messaging, and timing." },
+        { title: "How do you measure whether a campaign is actually working?", description: "We look beyond likes and followers to engagement rate, website traffic, lead generation, and conversions tied to business goals." },
+      ] },
+    ],
+    ctaTitle: "Ready to Turn Social Media Into a Growth Channel?",
+    ctaText: "Your audience is already on social media. Let's give them a reason to notice, trust, and choose your brand.",
+    ctaSupportingText: "Get a customized, data-driven social media roadmap built around your goals.",
+    ctaLabel: "Get Your Free Proposal",
+  },
+  "seo-services": {
+    cardDescription: "Increase organic visibility, attract high-intent traffic, improve search rankings, and generate sustainable growth with research-driven SEO strategies.",
+    cardCtaLabel: "Explore SEO Services",
+    heroTitle: "Increase Organic Traffic and Build Long-Term Business Growth",
+    heroSubtitle: "Get found by the right customers when they search for your products or services. Our data-driven SEO strategies improve search visibility, attract qualified traffic, and turn organic visitors into customers.",
+    heroCtaLabel: "Get Your Free SEO Proposal",
+    overviewTitle: "Turn Google Searches Into Real Business Growth",
+    overview: "Your customers are already searching for the products and services you offer. Our SEO services help your business appear in front of them at the exact moment they are ready to take action.\n\nFrom technical SEO and keyword research to content optimization, local SEO, and authority building, we create a complete search strategy designed around your business goals — not just rankings.",
+    whyChooseTitle: "Why Choose Our SEO Services?",
+    whyChooseText: "Search engines are constantly changing, but the fundamentals remain the same: a technically strong website, valuable content, relevant keywords, strong authority, and an excellent user experience.\n\nWe combine these elements into one strategic SEO campaign designed to increase organic visibility, attract qualified visitors, and generate sustainable business growth.\n\nNo shortcuts. No keyword stuffing. No dependence on paid advertising. Just a structured SEO strategy built for long-term results.",
+    processTitle: "How We Make It Happen",
+    process: [
+      { title: "Technical SEO Audit", description: "We identify and fix issues that prevent crawling, understanding, and indexing. Includes: crawling and indexing, site architecture, Core Web Vitals, mobile usability, canonicals, redirects, schema, and XML sitemaps." },
+      { title: "Keyword & Competitor Research", description: "We find customer search terms and analyze competitors. Includes: keyword research, search intent, competitor analysis, keyword gaps, SERP analysis, and commercial opportunities." },
+      { title: "On-Page & Content Optimization", description: "We optimize pages and build a content strategy. Includes: title tags, meta descriptions, headings, content optimization, internal linking, semantic keywords, and search-intent optimization." },
+      { title: "Authority Building", description: "We strengthen authority using link opportunities, digital PR, relevant backlinks, brand mentions, local citations, and sustainable authority development." },
+    ],
+    benefitsTitle: "Your Unfair Advantage",
+    benefits: [
+      { title: "Sustainable Traffic", description: "Build a consistent stream of qualified organic visitors without relying entirely on paid advertising." },
+      { title: "Higher Conversion Rates", description: "Target users with strong search intent and connect them with pages designed to convert." },
+      { title: "Industry Authority", description: "Build a trusted resource recognized by search engines and customers in your market." },
+    ],
+    stats: [
+      { label: "Keywords Ranked", value: "500+" },
+      { label: "Average Traffic Growth", value: "124%" },
+      { label: "Client Rating", value: "4.9★" },
+    ],
+    testimonial: { quote: "Our website rankings improved significantly, and we now receive consistent organic leads every month. The ROI has been incredible.", author: "Muhammad Ali" },
+    contentSections: [
+      { key: "seo-process", heading: "Our SEO Process", items: [
+        { title: "Discover", description: "We learn about your business, customers, competitors, goals, and current search visibility." },
+        { title: "Audit", description: "We analyze technical health, content, keywords, backlinks, and overall SEO performance." },
+        { title: "Strategize", description: "We build a prioritized SEO roadmap around the opportunities with the greatest business impact." },
+        { title: "Optimize", description: "We improve site structure, pages, content, internal links, technical SEO, and conversion elements." },
+        { title: "Grow", description: "We monitor rankings, traffic, conversions, competitors, and new search opportunities." },
+        { title: "Scale", description: "We expand into new keywords, topics, locations, services, and revenue opportunities." },
+      ] },
+      { key: "seo-service-types", heading: "SEO Services We Provide", items: [
+        { title: "Technical SEO", description: "Fix technical problems affecting crawling, indexing, performance, and search visibility." },
+        { title: "On-Page SEO", description: "Optimize pages for relevant keywords, search intent, users, and search engines." },
+        { title: "Keyword Research", description: "Find profitable keywords based on volume, competition, intent, and business value." },
+        { title: "Content SEO", description: "Create and optimize helpful content that satisfies users and builds topical authority." },
+        { title: "Local SEO", description: "Improve location-based visibility and help nearby customers find your business." },
+        { title: "Ecommerce SEO", description: "Optimize product, category, collection, and supporting pages for organic ecommerce traffic." },
+        { title: "Link Building", description: "Build relevant authority through outreach, digital PR, partnerships, and quality link opportunities." },
+        { title: "SEO Audits", description: "Analyze technical, on-page, content, off-page, and competitive SEO opportunities." },
+      ] },
+      { key: "business-goals", heading: "Built Around Your Business Goals", items: [
+        { title: "More Visibility", description: "Reach more people searching for what you offer." },
+        { title: "More Qualified Traffic", description: "Attract visitors with genuine interest and buying intent." },
+        { title: "More Leads", description: "Turn organic traffic into calls, forms, bookings, and enquiries." },
+        { title: "More Revenue", description: "Build an SEO channel that contributes to sustainable business growth." },
+      ] },
+      { key: "seo-difference", heading: "What Makes Our SEO Different?", items: [
+        { title: "Strategy Before Execution", description: "Every action starts with research and a clear objective rather than blind page optimization." },
+        { title: "Data-Driven Decisions", description: "Search data, competitor insights, analytics, and ranking trends determine priorities." },
+        { title: "Search Intent First", description: "We focus on why someone searches, not rankings that do not match your business." },
+        { title: "Technical + Content + Authority", description: "We work across the entire search ecosystem because successful SEO requires more than content." },
+        { title: "Transparent Reporting", description: "You can see what we are working on, what changed, and how organic performance is developing." },
+      ] },
+      { key: "faqs", eyebrow: "Frequently Asked Questions", heading: "SEO Questions, Answered", items: [
+        { title: "How long does SEO take to show results?", description: "Some improvements appear within the first few months, while competitive keywords and industries require more time and consistent optimization." },
+        { title: "What does an SEO campaign include?", description: "Technical SEO, keyword and competitor research, on-page optimization, content strategy, internal linking, local SEO, authority building, and ongoing monitoring." },
+        { title: "Can you improve my existing website's rankings?", description: "Yes. We audit existing websites, identify barriers and missed opportunities, and create a prioritized optimization plan." },
+        { title: "Do you guarantee first-page Google rankings?", description: "No reputable provider can guarantee a specific position. We improve the factors that influence visibility and build sustainable search growth." },
+        { title: "Will SEO increase my leads and sales?", description: "SEO attracts relevant users actively searching for your offer, while results also depend on the offer, website experience, competition, and conversion process." },
+        { title: "Do you provide local SEO?", description: "Yes. Local SEO improves location-based visibility and can generate nearby calls, enquiries, and visits." },
+      ] },
+    ],
+    ctaTitle: "Turn Search Traffic Into Business Growth",
+    ctaText: "Get a customized, data-driven SEO strategy tailored specifically to your business, market, and growth goals.",
+    ctaSupportingText: "Free consultation • Customized strategy • No obligation",
+    ctaLabel: "Get Your Free SEO Proposal",
+  },
+  "website-development": { cardDescription: "Create fast, responsive, SEO-friendly websites designed to build trust, improve user experience, and turn visitors into customers.", cardCtaLabel: "Explore Web Development" },
+  "branding": { cardDescription: "Create a memorable brand identity with strategic positioning, visual identity, messaging, and creative assets built around your audience.", cardCtaLabel: "Explore Branding" },
+  "meta-advertising": { name: "Meta Advertising", cardDescription: "Reach the right audience and generate measurable results through strategically planned Meta advertising campaigns optimized for conversions and growth.", cardCtaLabel: "Explore Meta Ads" },
+  "ai-automation": { cardDescription: "Automate repetitive workflows, improve efficiency, and create smarter business processes using practical AI and marketing automation solutions.", cardCtaLabel: "Explore AI Automation" },
+  "graphic-design": { cardDescription: "Create professional, conversion-focused visuals that strengthen your brand across websites, social media, advertising, and digital campaigns.", cardCtaLabel: "Explore Graphic Design" },
+  "business-strategy": { cardDescription: "Turn business goals into actionable growth plans with market research, competitive analysis, strategic planning, and performance insights.", cardCtaLabel: "Explore Growth Consulting" },
+  "app-development": { cardDescription: "Build scalable, user-friendly applications that support your digital ecosystem, customer experience, and long-term business growth.", cardCtaLabel: "Explore App Development" },
+};
+
+export const servicesData: ServiceData[] = baseServicesData.map((service) => ({
+  ...service,
+  ...(documentedServiceContent[service.slug] ?? {}),
+}));

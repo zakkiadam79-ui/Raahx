@@ -59,9 +59,19 @@ function api_services_update(PDO $pdo, string $id, array $input): array
                 icon_identifier = :icon_identifier,
                 hero_title = :hero_title,
                 hero_subtitle = :hero_subtitle,
+                card_description = :card_description,
+                card_cta_label = :card_cta_label,
+                hero_cta_label = :hero_cta_label,
+                overview_title = :overview_title,
                 overview = :overview,
                 why_choose_title = :why_choose_title,
                 why_choose_text = :why_choose_text,
+                process_title = :process_title,
+                benefits_title = :benefits_title,
+                cta_title = :cta_title,
+                cta_text = :cta_text,
+                cta_supporting_text = :cta_supporting_text,
+                cta_label = :cta_label,
                 testimonial_quote = :testimonial_quote,
                 testimonial_author = :testimonial_author,
                 display_order = :display_order
@@ -74,9 +84,19 @@ function api_services_update(PDO $pdo, string $id, array $input): array
             'icon_identifier' => $payload['icon_identifier'],
             'hero_title' => $payload['hero_title'],
             'hero_subtitle' => $payload['hero_subtitle'],
+            'card_description' => $payload['card_description'],
+            'card_cta_label' => $payload['card_cta_label'],
+            'hero_cta_label' => $payload['hero_cta_label'],
+            'overview_title' => $payload['overview_title'],
             'overview' => $payload['overview'],
             'why_choose_title' => $payload['why_choose_title'],
             'why_choose_text' => $payload['why_choose_text'],
+            'process_title' => $payload['process_title'],
+            'benefits_title' => $payload['benefits_title'],
+            'cta_title' => $payload['cta_title'],
+            'cta_text' => $payload['cta_text'],
+            'cta_supporting_text' => $payload['cta_supporting_text'],
+            'cta_label' => $payload['cta_label'],
             'testimonial_quote' => $payload['testimonial_quote'],
             'testimonial_author' => $payload['testimonial_author'],
             'display_order' => $payload['display_order'],
@@ -109,6 +129,20 @@ function api_service_with_children(PDO $pdo, array $row): array
     $process->execute(['id' => $row['id']]);
     $benefits = $pdo->prepare('SELECT title, description, display_order FROM service_benefits WHERE service_id = :id ORDER BY display_order ASC, id ASC');
     $benefits->execute(['id' => $row['id']]);
+    $sections = $pdo->prepare('SELECT id, section_key, eyebrow, heading, body, display_order FROM service_content_sections WHERE service_id = :id ORDER BY display_order ASC, id ASC');
+    $sections->execute(['id' => $row['id']]);
+    $contentSections = array_map(static function (array $section) use ($pdo): array {
+        $items = $pdo->prepare('SELECT title, description, details, display_order FROM service_content_items WHERE section_id = :section_id ORDER BY display_order ASC, id ASC');
+        $items->execute(['section_id' => $section['id']]);
+        return [
+            'key' => $section['section_key'],
+            'eyebrow' => $section['eyebrow'],
+            'heading' => $section['heading'],
+            'body' => $section['body'],
+            'display_order' => (int) $section['display_order'],
+            'items' => $items->fetchAll(),
+        ];
+    }, $sections->fetchAll());
 
     return [
         'id' => $row['id'],
@@ -117,12 +151,23 @@ function api_service_with_children(PDO $pdo, array $row): array
         'icon_identifier' => $row['icon_identifier'],
         'hero_title' => $row['hero_title'],
         'hero_subtitle' => $row['hero_subtitle'],
+        'card_description' => $row['card_description'],
+        'card_cta_label' => $row['card_cta_label'],
+        'hero_cta_label' => $row['hero_cta_label'],
+        'overview_title' => $row['overview_title'],
         'overview' => $row['overview'],
         'why_choose_title' => $row['why_choose_title'],
         'why_choose_text' => $row['why_choose_text'],
+        'process_title' => $row['process_title'],
+        'benefits_title' => $row['benefits_title'],
+        'cta_title' => $row['cta_title'],
+        'cta_text' => $row['cta_text'],
+        'cta_supporting_text' => $row['cta_supporting_text'],
+        'cta_label' => $row['cta_label'],
         'stats' => $stats->fetchAll(),
         'process' => $process->fetchAll(),
         'benefits' => $benefits->fetchAll(),
+        'content_sections' => $contentSections,
         'testimonial' => [
             'quote' => $row['testimonial_quote'],
             'author' => $row['testimonial_author'],
@@ -138,8 +183,19 @@ function api_services_payload(PDO $pdo, array $input, ?array $existing = null): 
     $aliases = [
         'heroTitle' => 'hero_title',
         'heroSubtitle' => 'hero_subtitle',
+        'cardDescription' => 'card_description',
+        'cardCtaLabel' => 'card_cta_label',
+        'heroCtaLabel' => 'hero_cta_label',
+        'overviewTitle' => 'overview_title',
         'whyChooseTitle' => 'why_choose_title',
         'whyChooseText' => 'why_choose_text',
+        'processTitle' => 'process_title',
+        'benefitsTitle' => 'benefits_title',
+        'contentSections' => 'content_sections',
+        'ctaTitle' => 'cta_title',
+        'ctaText' => 'cta_text',
+        'ctaSupportingText' => 'cta_supporting_text',
+        'ctaLabel' => 'cta_label',
         'displayOrder' => 'display_order',
     ];
     foreach ($aliases as $alias => $canonical) {
@@ -182,9 +238,20 @@ function api_services_payload(PDO $pdo, array $input, ?array $existing = null): 
         'icon_identifier' => $iconIdentifier,
         'hero_title' => Validation::string($source, 'hero_title', false, 500) ?? '',
         'hero_subtitle' => Validation::string($source, 'hero_subtitle', false, 1000) ?? '',
+        'card_description' => Validation::string($source, 'card_description', false, 2000) ?? '',
+        'card_cta_label' => Validation::string($source, 'card_cta_label', false, 255) ?? '',
+        'hero_cta_label' => Validation::string($source, 'hero_cta_label', false, 255) ?? '',
+        'overview_title' => Validation::string($source, 'overview_title', false, 500) ?? '',
         'overview' => Validation::string($source, 'overview', false, 100000) ?? '',
         'why_choose_title' => Validation::string($source, 'why_choose_title', false, 500) ?? '',
         'why_choose_text' => Validation::string($source, 'why_choose_text', false, 100000) ?? '',
+        'process_title' => Validation::string($source, 'process_title', false, 500) ?? '',
+        'benefits_title' => Validation::string($source, 'benefits_title', false, 500) ?? '',
+        'cta_title' => Validation::string($source, 'cta_title', false, 500) ?? '',
+        'cta_text' => Validation::string($source, 'cta_text', false, 10000) ?? '',
+        'cta_supporting_text' => Validation::string($source, 'cta_supporting_text', false, 1000) ?? '',
+        'cta_label' => Validation::string($source, 'cta_label', false, 255) ?? '',
+        'content_sections' => api_service_content_sections($source['content_sections'] ?? []),
         'testimonial_quote' => $testimonialQuote,
         'testimonial_author' => $testimonialAuthor,
         'display_order' => Validation::integer($source, 'display_order'),
@@ -234,15 +301,52 @@ function api_service_steps(mixed $value): array
     return $result;
 }
 
+function api_service_content_sections(mixed $value): array
+{
+    if (!is_array($value)) throw new ApiException(400, 'VALIDATION_ERROR', 'content_sections must be an array.');
+    $result = [];
+    $keys = [];
+    foreach ($value as $sectionIndex => $section) {
+        if (!is_array($section)) throw new ApiException(400, 'VALIDATION_ERROR', sprintf('content_sections[%d] must be an object.', $sectionIndex));
+        $key = Validation::slug((string) ($section['key'] ?? $section['section_key'] ?? ''), sprintf('content_sections[%d].key', $sectionIndex));
+        if (isset($keys[$key])) throw new ApiException(400, 'VALIDATION_ERROR', 'Each content section key must be unique.');
+        $keys[$key] = true;
+        $items = [];
+        if (!is_array($section['items'] ?? [])) throw new ApiException(400, 'VALIDATION_ERROR', sprintf('content_sections[%d].items must be an array.', $sectionIndex));
+        foreach ($section['items'] ?? [] as $itemIndex => $item) {
+            if (!is_array($item)) throw new ApiException(400, 'VALIDATION_ERROR', sprintf('content_sections[%d].items[%d] must be an object.', $sectionIndex, $itemIndex));
+            $items[] = [
+                'title' => Validation::string($item, 'title', true, 500),
+                'description' => Validation::string($item, 'description', false, 20000) ?? '',
+                'details' => Validation::nullableString($item, 'details', 20000),
+                'display_order' => Validation::integer($item, 'display_order', $itemIndex),
+            ];
+        }
+        $result[] = [
+            'key' => $key,
+            'eyebrow' => Validation::nullableString($section, 'eyebrow', 255),
+            'heading' => Validation::string($section, 'heading', true, 500),
+            'body' => Validation::nullableString($section, 'body', 50000),
+            'display_order' => Validation::integer($section, 'display_order', $sectionIndex),
+            'items' => $items,
+        ];
+    }
+    return $result;
+}
+
 function api_services_insert(PDO $pdo, string $id, array $payload): void
 {
     $statement = $pdo->prepare(
         'INSERT INTO services
-            (id, name, slug, icon_identifier, hero_title, hero_subtitle, overview,
-             why_choose_title, why_choose_text, testimonial_quote, testimonial_author, display_order)
+            (id, name, slug, icon_identifier, hero_title, hero_subtitle, card_description, card_cta_label,
+             hero_cta_label, overview_title, overview, why_choose_title, why_choose_text, process_title,
+             benefits_title, cta_title, cta_text, cta_supporting_text, cta_label,
+             testimonial_quote, testimonial_author, display_order)
          VALUES
-            (:id, :name, :slug, :icon_identifier, :hero_title, :hero_subtitle, :overview,
-             :why_choose_title, :why_choose_text, :testimonial_quote, :testimonial_author, :display_order)',
+            (:id, :name, :slug, :icon_identifier, :hero_title, :hero_subtitle, :card_description, :card_cta_label,
+             :hero_cta_label, :overview_title, :overview, :why_choose_title, :why_choose_text, :process_title,
+             :benefits_title, :cta_title, :cta_text, :cta_supporting_text, :cta_label,
+             :testimonial_quote, :testimonial_author, :display_order)',
     );
     $statement->execute([
         'id' => $id,
@@ -251,9 +355,19 @@ function api_services_insert(PDO $pdo, string $id, array $payload): void
         'icon_identifier' => $payload['icon_identifier'],
         'hero_title' => $payload['hero_title'],
         'hero_subtitle' => $payload['hero_subtitle'],
+        'card_description' => $payload['card_description'],
+        'card_cta_label' => $payload['card_cta_label'],
+        'hero_cta_label' => $payload['hero_cta_label'],
+        'overview_title' => $payload['overview_title'],
         'overview' => $payload['overview'],
         'why_choose_title' => $payload['why_choose_title'],
         'why_choose_text' => $payload['why_choose_text'],
+        'process_title' => $payload['process_title'],
+        'benefits_title' => $payload['benefits_title'],
+        'cta_title' => $payload['cta_title'],
+        'cta_text' => $payload['cta_text'],
+        'cta_supporting_text' => $payload['cta_supporting_text'],
+        'cta_label' => $payload['cta_label'],
         'testimonial_quote' => $payload['testimonial_quote'],
         'testimonial_author' => $payload['testimonial_author'],
         'display_order' => $payload['display_order'],
@@ -262,7 +376,7 @@ function api_services_insert(PDO $pdo, string $id, array $payload): void
 
 function api_services_replace_children(PDO $pdo, string $id, array $payload): void
 {
-    foreach (['service_stats', 'service_process_steps', 'service_benefits'] as $table) {
+    foreach (['service_stats', 'service_process_steps', 'service_benefits', 'service_content_sections'] as $table) {
         $delete = $pdo->prepare(sprintf('DELETE FROM %s WHERE service_id = :service_id', $table));
         $delete->execute(['service_id' => $id]);
     }
@@ -295,5 +409,28 @@ function api_services_replace_children(PDO $pdo, string $id, array $payload): vo
             'description' => $benefit['description'],
             'display_order' => $benefit['display_order'],
         ]);
+    }
+
+    $sectionStatement = $pdo->prepare('INSERT INTO service_content_sections (service_id, section_key, eyebrow, heading, body, display_order) VALUES (:service_id, :section_key, :eyebrow, :heading, :body, :display_order)');
+    $itemStatement = $pdo->prepare('INSERT INTO service_content_items (section_id, title, description, details, display_order) VALUES (:section_id, :title, :description, :details, :display_order)');
+    foreach ($payload['content_sections'] as $section) {
+        $sectionStatement->execute([
+            'service_id' => $id,
+            'section_key' => $section['key'],
+            'eyebrow' => $section['eyebrow'],
+            'heading' => $section['heading'],
+            'body' => $section['body'],
+            'display_order' => $section['display_order'],
+        ]);
+        $sectionId = (int) $pdo->lastInsertId();
+        foreach ($section['items'] as $item) {
+            $itemStatement->execute([
+                'section_id' => $sectionId,
+                'title' => $item['title'],
+                'description' => $item['description'],
+                'details' => $item['details'],
+                'display_order' => $item['display_order'],
+            ]);
+        }
     }
 }

@@ -65,6 +65,17 @@ export default function ServicesAdmin() {
   const [iconName, setIconName] = useState<ServiceIconName>(DEFAULT_SERVICE_ICON);
   const [heroTitle, setHeroTitle] = useState("");
   const [heroSubtitle, setHeroSubtitle] = useState("");
+  const [cardDescription, setCardDescription] = useState("");
+  const [cardCtaLabel, setCardCtaLabel] = useState("");
+  const [heroCtaLabel, setHeroCtaLabel] = useState("");
+  const [overviewTitle, setOverviewTitle] = useState("");
+  const [processTitle, setProcessTitle] = useState("");
+  const [benefitsTitle, setBenefitsTitle] = useState("");
+  const [contentSectionsRaw, setContentSectionsRaw] = useState("[]");
+  const [ctaTitle, setCtaTitle] = useState("");
+  const [ctaText, setCtaText] = useState("");
+  const [ctaSupportingText, setCtaSupportingText] = useState("");
+  const [ctaLabel, setCtaLabel] = useState("");
 
   // Stats (Format: Label | Value)
   const [statsRaw, setStatsRaw] = useState("");
@@ -149,19 +160,40 @@ export default function ServicesAdmin() {
       return;
     }
 
+    let contentSections: NonNullable<ServiceRecord["contentSections"]>;
+    try {
+      const parsed = JSON.parse(contentSectionsRaw || "[]");
+      if (!Array.isArray(parsed)) throw new Error();
+      contentSections = parsed;
+    } catch {
+      setApiError("Additional Service Sections must contain a valid JSON array.");
+      return;
+    }
+
     const serviceObj: ServiceRecord = {
       slug: slug.trim(),
       name: name.trim(),
       icon: iconName,
       heroTitle: heroTitle.trim(),
       heroSubtitle: heroSubtitle.trim(),
+      cardDescription: cardDescription.trim(),
+      cardCtaLabel: cardCtaLabel.trim(),
+      heroCtaLabel: heroCtaLabel.trim(),
+      overviewTitle: overviewTitle.trim(),
       overview: overview.trim(),
       whyChooseTitle: whyChooseTitle.trim(),
       whyChooseText: whyChooseText.trim(),
+      processTitle: processTitle.trim(),
       stats: parsedStats,
       process: parsedProcess,
+      benefitsTitle: benefitsTitle.trim(),
       benefits: parsedBenefits,
+      contentSections,
       testimonial: { quote: quote.trim(), author: author.trim() },
+      ctaTitle: ctaTitle.trim(),
+      ctaText: ctaText.trim(),
+      ctaSupportingText: ctaSupportingText.trim(),
+      ctaLabel: ctaLabel.trim(),
     };
     const existing = isEditing
       ? services.find((service) => service.id === isEditing || service.slug === isEditing)
@@ -210,9 +242,20 @@ export default function ServicesAdmin() {
     setIconName(getServiceIconName(service.icon));
     setHeroTitle(service.heroTitle || "");
     setHeroSubtitle(service.heroSubtitle || "");
+    setCardDescription(service.cardDescription || "");
+    setCardCtaLabel(service.cardCtaLabel || "");
+    setHeroCtaLabel(service.heroCtaLabel || "");
+    setOverviewTitle(service.overviewTitle || "");
     setOverview(service.overview || "");
     setWhyChooseTitle(service.whyChooseTitle || "");
     setWhyChooseText(service.whyChooseText || "");
+    setProcessTitle(service.processTitle || "");
+    setBenefitsTitle(service.benefitsTitle || "");
+    setContentSectionsRaw(JSON.stringify(service.contentSections || [], null, 2));
+    setCtaTitle(service.ctaTitle || "");
+    setCtaText(service.ctaText || "");
+    setCtaSupportingText(service.ctaSupportingText || "");
+    setCtaLabel(service.ctaLabel || "");
 
     setStatsRaw(service.stats?.map((stat) => `${stat.label} | ${stat.value}`).join("\n") || "");
     setProcessRaw(service.process?.map((step) => `${step.title} | ${step.description}`).join("\n") || "");
@@ -255,9 +298,20 @@ export default function ServicesAdmin() {
     setIconName(DEFAULT_SERVICE_ICON);
     setHeroTitle("");
     setHeroSubtitle("");
+    setCardDescription("");
+    setCardCtaLabel("");
+    setHeroCtaLabel("");
+    setOverviewTitle("");
     setOverview("");
     setWhyChooseTitle("");
     setWhyChooseText("");
+    setProcessTitle("");
+    setBenefitsTitle("");
+    setContentSectionsRaw("[]");
+    setCtaTitle("");
+    setCtaText("");
+    setCtaSupportingText("");
+    setCtaLabel("");
     setStatsRaw("");
     setProcessRaw("");
     setBenefitsRaw("");
@@ -356,6 +410,10 @@ export default function ServicesAdmin() {
               </div>
             </div>
           </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            <div><label htmlFor="card-description" className={labelClassName}>Service Card Description</label><textarea id="card-description" value={cardDescription} onChange={(e) => setCardDescription(e.target.value)} rows={3} className={`${fieldClassName} mt-2 resize-y`} /></div>
+            <div><label htmlFor="card-cta" className={labelClassName}>Service Card CTA</label><input id="card-cta" value={cardCtaLabel} onChange={(e) => setCardCtaLabel(e.target.value)} className={`${fieldClassName} mt-2`} /></div>
+          </div>
         </FormSection>
 
         <FormSection
@@ -389,6 +447,8 @@ export default function ServicesAdmin() {
             </div>
           </div>
 
+          <div><label htmlFor="hero-cta" className={labelClassName}>Hero CTA Label</label><input id="hero-cta" value={heroCtaLabel} onChange={(e) => setHeroCtaLabel(e.target.value)} className={`${fieldClassName} mt-2`} /></div>
+
           <div>
             <label htmlFor="service-stats" className={labelClassName}>Stats Banner</label>
             <p className={helpTextClassName}>
@@ -410,6 +470,7 @@ export default function ServicesAdmin() {
           title="Main Service Content"
           description="Explain the service clearly in the main overview section."
         >
+          <div><label htmlFor="overview-title" className={labelClassName}>Overview Section Title</label><input id="overview-title" value={overviewTitle} onChange={(e) => setOverviewTitle(e.target.value)} className={`${fieldClassName} mt-2`} /></div>
           <div>
             <label htmlFor="service-overview" className={labelClassName}>Main Service Overview Paragraph</label>
             <p className={helpTextClassName}>Describe the service, its value, and the results it is designed to achieve.</p>
@@ -460,6 +521,7 @@ export default function ServicesAdmin() {
           title="Process"
           description="Define the steps visitors will see in the service process section."
         >
+          <div><label htmlFor="process-title" className={labelClassName}>Process Section Title</label><input id="process-title" value={processTitle} onChange={(e) => setProcessTitle(e.target.value)} className={`${fieldClassName} mt-2`} /></div>
           <div>
             <label htmlFor="service-process" className={labelClassName}>How We Make It Happen Steps</label>
             <p className={helpTextClassName}>
@@ -480,6 +542,7 @@ export default function ServicesAdmin() {
           title="Unfair Advantage"
           description="List the practical advantages and outcomes this service provides."
         >
+          <div><label htmlFor="benefits-title" className={labelClassName}>Benefits Section Title</label><input id="benefits-title" value={benefitsTitle} onChange={(e) => setBenefitsTitle(e.target.value)} className={`${fieldClassName} mt-2`} /></div>
           <div>
             <label htmlFor="service-benefits" className={labelClassName}>Your Unfair Advantage Benefits</label>
             <p className={helpTextClassName}>
@@ -494,6 +557,22 @@ export default function ServicesAdmin() {
               className={`${fieldClassName} mt-2 resize-y`}
             />
           </div>
+        </FormSection>
+
+        <FormSection
+          title="Additional Service Sections"
+          description="Manage document-defined FAQs, service lists, audience sections, and additional structured content as JSON."
+        >
+          <div><label htmlFor="content-sections" className={labelClassName}>Structured Sections JSON</label><p className={helpTextClassName}>Each section uses key, optional eyebrow, heading, optional body, and an items array containing title, description, and optional details.</p><textarea id="content-sections" value={contentSectionsRaw} onChange={(e) => setContentSectionsRaw(e.target.value)} rows={16} spellCheck={false} className={`${fieldClassName} mt-2 resize-y font-mono text-xs`} /></div>
+        </FormSection>
+
+        <FormSection
+          title="Final Call to Action"
+          description="Control the service-specific proposal message at the bottom of the page."
+        >
+          <div className="grid gap-5 md:grid-cols-2"><div><label htmlFor="cta-title" className={labelClassName}>CTA Title</label><input id="cta-title" value={ctaTitle} onChange={(e) => setCtaTitle(e.target.value)} className={`${fieldClassName} mt-2`} /></div><div><label htmlFor="cta-label" className={labelClassName}>CTA Button Label</label><input id="cta-label" value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} className={`${fieldClassName} mt-2`} /></div></div>
+          <div><label htmlFor="cta-text" className={labelClassName}>CTA Description</label><textarea id="cta-text" value={ctaText} onChange={(e) => setCtaText(e.target.value)} rows={3} className={`${fieldClassName} mt-2 resize-y`} /></div>
+          <div><label htmlFor="cta-support" className={labelClassName}>CTA Supporting Text</label><input id="cta-support" value={ctaSupportingText} onChange={(e) => setCtaSupportingText(e.target.value)} className={`${fieldClassName} mt-2`} /></div>
         </FormSection>
 
         <FormSection
